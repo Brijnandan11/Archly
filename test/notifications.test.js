@@ -40,3 +40,10 @@ test('outbox refuses delivery when sender configuration is missing',async t=>{
  env(t,'MAIL_FROM','');
  await assert.rejects(deliverNotifications(),/Email delivery not configured/);
 });
+
+
+test('password recovery mail contains the reset link and clears its payload after delivery',async t=>{
+ const {task,statements}=fakeOutbox(t);task.kind='password_reset';task.payload={url:'https://club.example.invalid/#/reset-password?token=test-token'};
+ t.mock.method(globalThis,'fetch',async(_url,options)=>{const body=JSON.parse(options.body);assert.match(body.text,/valid for 30 minutes/);assert.ok(body.text.includes(task.payload.url));return Response.json({id:'recovery-email'})});
+ assert.deepEqual(await deliverNotifications(1),{completed:1,failed:0});assert.ok(statements.some(x=>x.sql.includes("payload=CASE WHEN kind='password_reset' THEN '{}'::jsonb")));
+});
