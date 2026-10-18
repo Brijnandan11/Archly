@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const main=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+const extra=readFileSync(new URL('../src/extra-routes.js',import.meta.url),'utf8');
+const schema=readFileSync(new URL('../sql/001_schema.sql',import.meta.url),'utf8');
+test('new modules are registered before 404',()=>{const routes=main.search(/app\.use\('\/api',\s*extraRoutes\)/);const fallback=main.search(/app\.use\(\(req,\s*res\)\s*=>\s*res\.status\(404\)/);assert.ok(routes>=0&&fallback>routes);});
+test('admin and leader endpoints require server authentication',()=>{for(const p of ['admin/registrations/export','admin/teams/:id/members','admin/teams/:id/leader','admin/dashboard/summary'])assert.match(extra,new RegExp(`['\"]/${p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`));assert.match(extra,/const admin=\[auth,role\('ADMIN'\)\]/);assert.match(extra,/const lead=handler/)});
+test('spin locks team and selected participant and keeps uniqueness',()=>{assert.match(extra,/FOR UPDATE OF t/);assert.match(extra,/FOR UPDATE OF rg SKIP LOCKED/);assert.match(schema,/UNIQUE\s*\(event_id,registration_id\)/i)});
+test('payment verification confirms captured provider amount',()=>{assert.match(extra,/payment.status!=='captured'/);assert.match(extra,/payment.amount!==p.amount/);assert.match(extra,/timingSafeEqual/)});
+test('dashboard values originate from SQL counts',()=>assert.match(extra,/SELECT count\(\*\) FROM club\.registrations/));

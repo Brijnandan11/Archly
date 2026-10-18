@@ -1,0 +1,14 @@
+import {loadEnvFile} from 'node:process';
+import {existsSync as hasFile} from 'node:fs';
+if(hasFile('.env'))loadEnvFile('.env');
+import {existsSync} from 'node:fs';
+const required=['DATABASE_URL','JWT_SECRET','CORS_ORIGINS','SUPABASE_URL','SUPABASE_SECRET_KEY','RAZORPAY_KEY_ID','RAZORPAY_KEY_SECRET','RAZORPAY_WEBHOOK_SECRET','RESEND_API_KEY','MAIL_FROM','WORKER_SECRET'];
+let problems=[];
+for(const k of required)if(!process.env[k])problems.push(`${k} not configured`);
+if(process.env.JWT_SECRET&&Buffer.byteLength(process.env.JWT_SECRET)<32)problems.push('JWT_SECRET too short');
+if(!existsSync(new URL('../package-lock.json',import.meta.url)))problems.push('package-lock.json missing: run npm install with registry access and commit it');
+if(process.env.DATABASE_URL&&!process.env.DATABASE_URL.startsWith('postgresql://'))problems.push('DATABASE_URL must be a PostgreSQL URI');
+if(process.env.SUPABASE_URL&&process.env.SUPABASE_URL!=='https://wfmzhrjdjbkuezsmewjk.supabase.co')problems.push('Unexpected Supabase URL; review project target');
+if(process.env.CORS_ORIGINS?.includes('*'))problems.push('Wildcard CORS not approved for production');
+if(process.env.NODE_ENV!=='production')problems.push('NODE_ENV must be production for a production check');
+if(problems.length){console.error('NOT READY FOR PRODUCTION:\n'+problems.map(x=>' - '+x).join('\n'));process.exitCode=1;}else console.log('Environment preflight PASS (does not replace live integration and security tests)');

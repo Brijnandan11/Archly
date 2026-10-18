@@ -1,0 +1,1 @@
+import {assertConfig} from './config.js';import {pool} from './db.js';import {deliverNotifications} from './notifications.js';assertConfig();try{console.log(await deliverNotifications(50));}finally{await pool.end();}

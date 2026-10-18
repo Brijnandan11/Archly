@@ -1,0 +1,37 @@
+html.club-is-loading,html.club-is-loading body{overflow:hidden}
+.club-preloader{--digit-size:clamp(118px,15vw,200px);position:fixed;inset:0;z-index:1000;background:#080808;color:#ef3333;overflow:hidden;isolation:isolate;transition:opacity .6s cubic-bezier(.94,0,.06,1)}
+.loader-header{position:absolute;top:clamp(25px,5vw,64px);left:clamp(25px,5vw,72px);display:flex;align-items:center;gap:12px;z-index:2;font:500 10px Arial,sans-serif;letter-spacing:.17em;color:#a39b9b}.loader-header strong{font:700 25px/1 monospace;color:#ef3333;letter-spacing:-.15em}.loader-label{position:absolute;left:clamp(25px,5vw,72px);bottom:clamp(25px,4vw,52px);font:9px monospace;color:#8a8080;letter-spacing:.14em}
+.loader-counter{position:absolute;bottom:clamp(40px,7vw,92px);right:clamp(30px,5vw,72px);width:calc(var(--digit-size)*2);height:var(--digit-size);display:flex;z-index:3;transition:opacity .3s ease;transform-origin:center}
+.loader-digit-window{position:relative;width:var(--digit-size);height:var(--digit-size);overflow:hidden;flex:none}.loader-digit-window:first-child{background:#ef3333;color:#080808;transition:width .5s cubic-bezier(.94,0,.06,1),height .5s cubic-bezier(.94,0,.06,1),border-radius .5s ease}
+.loader-digit-window:last-child{background:transparent;color:#ef3333}
+.loader-reel{display:flex;flex-direction:column;position:absolute;left:0;right:0;top:0;will-change:transform;transition:transform .42s cubic-bezier(.16,1,.3,1)}
+.loader-reel span{display:flex;align-items:center;justify-content:center;width:var(--digit-size);height:var(--digit-size);flex:none;font:400 calc(var(--digit-size)*1.4)/1 Arial,Helvetica,sans-serif;letter-spacing:-.105em;padding-right:.09em;font-variant-numeric:tabular-nums}
+.loader-stickers{position:absolute;inset:0;pointer-events:none;z-index:1}
+.loader-sticker{position:absolute;width:clamp(60px,7.8vw,120px);height:clamp(60px,7.8vw,120px);object-fit:contain;transform:translate(-50%,-50%) rotate(var(--turn)) scale(.1);animation:sticker-arrive .5s cubic-bezier(.16,1.4,.3,1) forwards;will-change:transform;filter:drop-shadow(0 8px 15px #0009)}
+.loader-sticker.is-old{opacity:0;transform:translate(-50%,-50%) rotate(var(--turn)) scale(.4);transition:opacity .25s,transform .25s;animation:none}
+@keyframes sticker-arrive{0%{transform:translate(-50%,-50%) rotate(calc(var(--turn) - 12deg)) scale(.1);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--turn)) scale(1)}}
+.loader-dot{position:absolute;width:12px;height:12px;background:#ef3333;border-radius:50%;opacity:0;z-index:4}
+.preloader-skip{position:absolute;right:clamp(24px,4vw,58px);top:clamp(24px,4vw,52px);background:none;border:1px solid #ffffff24;border-radius:30px;color:#afa4a4;font:9px Arial,sans-serif;letter-spacing:.1em;padding:11px 17px;cursor:pointer;z-index:5}.preloader-skip:hover{border-color:#ef3333;color:#fff}.preloader-skip:focus-visible{outline:2px solid #ef3333;outline-offset:5px}
+.club-preloader.is-finishing .loader-reel{transform:translateY(-120%)!important;opacity:0;transition:transform .3s cubic-bezier(.94,0,.06,1),opacity .2s}
+.club-preloader.is-finishing .loader-sticker{opacity:0;transition:opacity .3s;animation:none}
+.club-preloader.is-leaving{opacity:0;pointer-events:none}.club-preloader.is-leaving .loader-counter,.club-preloader.is-leaving .loader-header,.club-preloader.is-leaving .loader-label,.club-preloader.is-leaving .preloader-skip{opacity:0;transition:opacity .25s}
+.preloader-accessible{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:650px){.club-preloader{--digit-size:clamp(100px,27vw,145px)}.loader-counter{left:50%;top:50%;bottom:auto;right:auto;transform:translate(-50%,-50%)}.loader-header{font-size:8px;gap:8px}.loader-header strong{font-size:22px}.loader-label{font-size:7px}.loader-sticker{width:75px;height:75px}.preloader-skip{font-size:8px;padding:10px 13px}}
+@media(prefers-reduced-motion:reduce){.club-preloader,.loader-reel,.loader-sticker{animation:none!important;transition:none!important;will-change:auto}.loader-stickers{display:none}}
+
+/* A light paper opening contrasts with the dark red-and-black homepage. */
+.club-preloader{background:#F2EFE8;color:#181817}
+.loader-header{color:#67635e}.loader-header strong{color:#D92232}
+.loader-label{color:#77716b}
+.loader-digit-window:first-child{background:#E82D3D;color:#F2EFE8}
+.loader-digit-window:last-child{background:transparent;color:#181817}
+.loader-dot{background:#E82D3D}
+.preloader-skip{color:#56514c;border-color:#18181735;background:transparent}
+.preloader-skip:hover{color:#181817;border-color:#D92232}
+.loader-sticker{width:clamp(100px,13.5vw,205px);height:clamp(100px,13.5vw,205px);filter:drop-shadow(0 5px 8px #27201816)}
+@media(max-width:650px){.loader-sticker{width:125px;height:125px}}
+/* Fast rolling intro with a bounded exit, without layout-changing animations. */
+.club-preloader{transition:opacity .18s ease-out}.loader-reel{transition:transform .1s cubic-bezier(.2,.7,.2,1)}.loader-counter{scale:1;transition:scale .22s cubic-bezier(.4,0,.2,1),opacity .18s}.club-preloader.is-finishing .loader-counter{scale:.065;opacity:0}.club-preloader.is-finishing .loader-reel{transform:none!important;opacity:1;transition:none}.loader-sticker{filter:none;animation-duration:.28s;will-change:auto}.club-preloader.is-leaving .loader-header,.club-preloader.is-leaving .loader-label,.club-preloader.is-leaving .preloader-skip{transition:opacity .12s}.club-preloader.is-leaving{pointer-events:none}
+
+/* Hover artwork stays above the counter, with Skip always accessible. */
+.loader-stickers{z-index:4}

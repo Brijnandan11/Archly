@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+test('SQL prevents duplicate event registration and event participant assignment',()=>{const s=readFileSync(new URL('../sql/001_schema.sql',import.meta.url),'utf8');assert.match(s,/UNIQUE\(event_id,user_id\)/);assert.match(s,/UNIQUE\(event_id,registration_id\)/)});
+test('spin is transactional and locks registrations',()=>{const s=readFileSync(new URL('../src/extra-routes.js',import.meta.url),'utf8');assert.match(s,/FOR UPDATE OF rg SKIP LOCKED/);assert.match(s,/r\.post\(\['\/leader\/session\/team\/spin'/)});

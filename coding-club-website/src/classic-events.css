@@ -1,0 +1,33 @@
+/* Restore the original event-card gallery and filter/search layout. */
+.club-app .event-showcase{background:#10121d;color:#f5f2e9}
+.club-app .events-chapter>.page-title{background:#343ee8;color:#fff}
+.club-app .events-chapter>.page-title em{color:#dfe3ff}
+.club-app .events-chapter>.page-title .eyeline,.club-app .events-chapter>.page-title .page-copy{color:#f2f0ff}
+.club-app .events-chapter>.section{background:#10121d;color:#f5f2e9}
+.club-app .events-chapter .event-toolbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:60px}
+.club-app .events-chapter .filter-row{gap:9px}
+.club-app .events-chapter .filter-row button{background:#292837;border:1px solid #625e73;color:#eeeaf7;border-radius:5px;padding:11px 14px;transition:background .2s,color .2s,border-color .2s}
+.club-app .events-chapter .filter-row button.active,.club-app .events-chapter .filter-row button:hover{background:#d8ee9a;border-color:#d8ee9a;color:#202719}
+.club-app .events-chapter .search-input{background:#1b1b27;color:#f5f2e9;border:1px solid #686479;border-radius:5px;padding:12px 15px;min-width:200px}
+.club-app .events-chapter .search-input::placeholder{color:#bab7c2}
+.club-app .events-chapter .event-group+.event-group{margin-top:85px}
+.club-app .events-chapter .subheading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:27px;padding-bottom:18px;border-bottom:1px solid #ffffff35}
+.club-app .events-chapter .subheading h2{font-size:clamp(27px,3.6vw,48px);margin:0;color:#fff}
+.club-app .events-chapter .subheading sup{font-size:.38em;color:#d8ee9a;margin-left:12px;vertical-align:top}
+.club-app .events-chapter .subheading .tiny-label{color:#ddd9e8}
+.club-app .events-chapter .event-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.club-app .events-chapter .event-card{background:#1b1b25;color:#f5f2e9;border:1px solid #ffffff26;box-shadow:0 12px 30px #0003}
+.club-app .events-chapter .event-card .card-body{background:#1b1b25}
+.club-app .events-chapter .event-card .card-body>p{color:#cfccd7}
+.club-app .events-chapter .event-card .event-facts{color:#d8ee9a;border-color:#ffffff32}
+.club-app .events-chapter .event-card .meta-line{color:#dedbe6}
+.club-app .events-chapter .event-card .status{color:#d5d0df}
+.club-app .events-chapter .event-card .status.open{color:#d8ee9a;border-color:#d8ee9a}
+.club-app .events-chapter .register-event-cta{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:42px;padding:10px 15px;border-radius:5px;background:#ff806b;color:#211512;border:1px solid #ff806b;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;transition:transform .2s,background .2s}
+.club-app .events-chapter .register-event-cta:hover{background:#ff9c89;transform:translateY(-2px)}
+.club-app .events-chapter .register-event-cta>span{font-size:16px}
+.club-app .events-chapter .text-link{color:#eeeaf7;border-color:#a6a2b2}
+.club-app .events-chapter .text-link:hover{color:#d8ee9a;border-color:#d8ee9a}
+.club-app .events-chapter .demo-marker{color:#c9c4d1}
+@media(max-width:1000px){.club-app .events-chapter .event-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.club-app .events-chapter .event-toolbar{align-items:stretch;flex-direction:column;margin-bottom:38px}.club-app .events-chapter .filter-row{overflow-x:auto;flex-wrap:nowrap;padding-bottom:8px}.club-app .events-chapter .filter-row button{white-space:nowrap}.club-app .events-chapter .search-input{width:100%}.club-app .events-chapter .event-grid{grid-template-columns:1fr;gap:16px}.club-app .events-chapter .event-group+.event-group{margin-top:55px}.club-app .events-chapter .subheading{align-items:flex-start;flex-direction:column;gap:10px}.club-app .events-chapter .subheading h2{font-size:30px}}

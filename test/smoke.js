@@ -1,0 +1,2 @@
+import 'dotenv/config';
+const base=process.env.SMOKE_URL||'http://localhost:4000';const r=await fetch(base+'/api/health');if(!r.ok)throw Error(`health failed ${r.status}`);const payload=await r.json();if(payload.status!=='ok'||payload.database!=='connected')throw Error('health incomplete');const protectedResponse=await fetch(base+'/api/auth/me');if(protectedResponse.status!==401)throw Error('auth guard failed');console.log('PASS: DB-backed health and unauthorized guard');
