@@ -1,1 +1,0 @@
-const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.cpSync('public/assets','dist/assets',{recursive:true});fs.copyFileSync('index.html','dist/index.html');require('esbuild').buildSync({entryPoints:['src/main.tsx'],bundle:true,outfile:'dist/assets/app.js',minify:true,jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},loader:{'.css':'css'}});
