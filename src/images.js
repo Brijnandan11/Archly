@@ -12,7 +12,7 @@ export function imagePath(kind,id){if(!['events','faculty','team'].includes(kind
 const uploader=upload.single('image');
 r.post('/admin/images/:kind/:id',auth,role('ADMIN'),(req,res,next)=>uploader(req,res,err=>err?next(err):next()),handler(async(req,res)=>{
  if(!req.file)fail(400,'A JPEG, PNG, AVIF or WebP image is required');
- const kind=req.params.kind,id=req.params.id,path=imagePath(kind,id);const table=kind==='events'?'events':kind==='faculty'?'faculty':'student_team';const column=kind==='events'?'banner':'photo';
+ const kind=req.params.kind,id=req.params.id,path=imagePath(kind,id);const gallery=req.query.purpose==='gallery';if(req.query.purpose&&req.query.purpose!=='gallery')fail(400,'Invalid image purpose');if(gallery&&kind!=='events')fail(400,'Gallery images belong to events');const table=kind==='events'?'events':kind==='faculty'?'faculty':'student_team';const column=kind==='events'?'banner':'photo';
  let output;try{output=await sharp(req.file.buffer,{limitInputPixels:25_000_000,failOn:'error'}).rotate().resize({width:1600,height:1600,fit:'inside',withoutEnlargement:true}).webp({quality:82,effort:4}).toBuffer();}catch{fail(400,'Invalid image data');}
  const {url,key}=settings();const uploadUrl=`${url}/storage/v1/object/${bucket}/${path}`;
  // Make sure the target belongs to a valid database record before uploading.
@@ -21,7 +21,7 @@ r.post('/admin/images/:kind/:id',auth,role('ADMIN'),(req,res,next)=>uploader(req
  const response=await fetch(uploadUrl,{method:'POST',headers:{apikey:key,'Content-Type':'image/webp','x-upsert':'false','Cache-Control':'public, max-age=31536000'},body:output});
  if(!response.ok)fail(502,'Image storage upload failed');
  const publicUrl=`${url}/storage/v1/object/public/${bucket}/${path}`;
- try{await tx(async c=>{const updated=await c.query(`UPDATE club.${table} SET ${column}=$1 WHERE id=$2 RETURNING id`,[publicUrl,id]);if(!updated.rowCount)fail(404,'Record not found');await audit(c,req.user.id,'ADMIN_UPLOADED_IMAGE',id,{kind,path,bytes:output.length});});}
+ try{await tx(async c=>{const updated=gallery?await c.query("UPDATE club.events SET photos=photos||jsonb_build_array($1::text) WHERE id=$2 AND jsonb_array_length(photos)<50 RETURNING id",[publicUrl,id]):await c.query(`UPDATE club.${table} SET ${column}=$1 WHERE id=$2 RETURNING id`,[publicUrl,id]);if(!updated.rowCount)fail(gallery?409:404,gallery?'Event photo limit reached or event unavailable':'Record not found');await audit(c,req.user.id,'ADMIN_UPLOADED_IMAGE',id,{kind,path,bytes:output.length});});}
  catch(e){await fetch(uploadUrl,{method:'DELETE',headers:{apikey:key}}).catch(()=>{});throw e;}
  res.status(201).json({url:publicUrl,kind,record_id:id,content_type:'image/webp',bytes:output.length});
 }));
