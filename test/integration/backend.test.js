@@ -60,7 +60,7 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
   await t.test('health, public lists, missing routes and auth guards',async()=>{
    assert.deepEqual(await request('GET','/api/health'),{status:'ok',database:'connected'});
    for(const path of ['/api/events','/api/faculty','/api/team'])assert.ok(Array.isArray(await request('GET',path)));
-   for(const path of ['/api/auth/me','/api/admin/events','/api/admin/dashboard','/api/registrations/me','/api/leader/session'])await request('GET',path,undefined,null,path==='/api/admin/events'?404:401);
+   for(const path of ['/api/auth/me','/api/admin/events','/api/admin/leaders','/api/admin/payments','/api/admin/dashboard','/api/registrations/me','/api/leader/session'])await request('GET',path,undefined,null,401);
    await request('GET','/missing',undefined,null,404);
   });
   await t.test('private schema has RLS and no public API role access',async()=>{
@@ -182,6 +182,14 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
   });
   await t.test('dashboards, team lists, audit and notification queue',async()=>{
    for(const path of ['/api/admin/dashboard','/api/admin/dashboard/summary','/api/admin/teams','/api/admin/audit','/api/admin/notifications'])await request('GET',path,undefined,admin.token);
+   const managedEvents=await request('GET','/api/admin/events?limit=100',undefined,admin.token);
+   assert.ok(managedEvents.some(e=>e.status==='DRAFT'),'Admin can see draft events');
+   const managedLeaders=await request('GET','/api/admin/leaders?event_id='+leader.event_id,undefined,admin.token);
+   assert.ok(managedLeaders.some(l=>l.id===leader.id));
+   assert.ok(managedLeaders.every(l=>!('credential_hash' in l)&&!('one_time_password' in l)));
+   const managedPayments=await request('GET','/api/admin/payments?limit=100',undefined,admin.token);
+   assert.ok(managedPayments.some(p=>p.registration_id===paidReg.id));
+   for(const path of ['/api/admin/events','/api/admin/leaders','/api/admin/payments'])await request('GET',path,undefined,participant.token,403);
    assert.ok(Number((await query('SELECT count(*) FROM club.notification_outbox WHERE recipient=$1',[participant.email])).rows[0].count)>0);
    await request('POST','/api/internal/notifications/process',{},null,401);
   });
