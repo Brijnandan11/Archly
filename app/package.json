@@ -1,0 +1,27 @@
+{
+  "name": "coding-club-frontend",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/check-vercel-env.cjs && node build.cjs",
+    "check": "node scripts/check-render.cjs",
+    "dev": "node dev.cjs",
+    "start": "node build.cjs && node serve.cjs",
+    "check:committee": "node scripts/check-committee.cjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
