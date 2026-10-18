@@ -4,6 +4,7 @@ export async function enqueueMail(c,kind,recipient,subject,payload={}) {
  await c.query('INSERT INTO club.notification_outbox(kind,recipient,subject,payload) VALUES($1,$2,$3,$4::jsonb)',[kind,recipient,subject,JSON.stringify(payload)]);
 }
 export function renderMail(kind,payload){
+ if(kind==='password_reset')return `Reset your Coding Club password using this link (valid for 30 minutes): ${payload.url||''}. If you did not request a reset, ignore this email.`;
  const text={registration:`Your registration ${payload.code||''} has been received for ${payload.event||'the event'}.`,payment:`Payment confirmed for registration ${payload.code||''}.`,leader:`You were selected as event leader. Your leader ID is ${payload.leaderCode||''}. Contact the administrator for secure credential delivery.`,team:`Your team has been updated for ${payload.event||'the event'}.`}[kind]||'Coding Club notification';
  return text;
 }
@@ -16,7 +17,7 @@ export async function deliverNotifications(limit=10){
   try{
    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':task.id},body:JSON.stringify({from:process.env.MAIL_FROM,to:[task.recipient],subject:task.subject,text:renderMail(task.kind,task.payload)})});
    if(!response.ok)throw new Error('Email provider returned '+response.status);
-   await query("UPDATE club.notification_outbox SET status='SENT',sent_at=now(),last_error=NULL WHERE id=$1",[task.id]);completed++;
+   await query("UPDATE club.notification_outbox SET status='SENT',sent_at=now(),last_error=NULL,payload=CASE WHEN kind='password_reset' THEN '{}'::jsonb ELSE payload END WHERE id=$1",[task.id]);completed++;
   }catch(e){await query("UPDATE club.notification_outbox SET status='FAILED',last_error=$2,next_attempt_at=now()+make_interval(mins=>LEAST(1440,POWER(2,LEAST(attempts,10))::int)) WHERE id=$1",[task.id,String(e.message).slice(0,200)]);failed++;}
  }
  return {completed,failed};
