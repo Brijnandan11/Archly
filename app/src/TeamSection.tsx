@@ -1,0 +1,5 @@
+import React,{useMemo} from 'react';
+import {TeamRevealGrid} from './components/ui/team-reveal-grid';
+import {ChapterHeader} from './ui';
+import type {Store} from './model';
+export default function TeamSection({store}:{store:Store}){const people=useMemo(()=>store.profiles.filter(person=>person.kind==='student').sort((a,b)=>a.order-b.order),[store.profiles]);const members=useMemo(()=>people.map((person,index)=>({id:person.id,name:person.name,role:person.role,expertise:person.bio,image:person.photo,imageAlt:person.placeholder?'Demo portrait for '+person.name:person.name,accent:['#fb4f43','#b4baf7','#d9ef80'][index%3],github:person.github,portfolio:person.portfolio})),[people]);return <><ChapterHeader label="04 / STUDENT TEAM" lines={['THE','BUILDERS.']} copy="The students building our workshops, projects, and community." tone="cobalt" strip="CREATE. CODE. CONQUER."/><TeamRevealGrid members={members} title="Meet your people" defaultActiveMemberId={null} autoPlay={false} description="Different strengths. One shared direction."/></>}
