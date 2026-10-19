@@ -42,11 +42,12 @@ test('poster frames fit while desktop scroll animation and mobile navigation rem
 // Browser toolbars and laptop display scaling often reduce CSS viewport height.
 test('short laptop viewports retain the floating gallery and working controls',async({page})=>{
  await page.route('**/api/**',route=>route.fulfill({json:new URL(route.request().url()).pathname==='/api/events'?posters.map((poster,i)=>({id:String(i),title:poster,slug:poster,event_date:'2099-01-01',status:'CLOSED',team_size:10,banner:'/assets/events/'+poster+'-2026.webp',presentation:{poster_format:'portrait'}})):[]}));
+ await page.route('**/assets/vendor/ScrollTrigger.min.js',async route=>{await new Promise(resolve=>setTimeout(resolve,4500));await route.continue()});
  await page.setViewportSize({width:1366,height:600});
  await page.goto('/#/section/events');
  await page.locator('#club-preloader').waitFor({state:'hidden'});
  const gallery=page.locator('.gallery-posters');
- await expect(gallery).toHaveClass(/is-kinetic/);
+ await expect(gallery).toHaveClass(/is-kinetic/,{timeout:15000});
  await page.evaluate(()=>{window.__ccLenis.scrollTo(document.querySelector('.gallery-posters'),{immediate:true});window.ScrollTrigger.update()});
  await expect.poll(()=>gallery.locator('.gallery-stage').evaluate(el=>el.getBoundingClientRect().height)).toBe(600);
  await page.getByRole('button',{name:'Next event',exact:true}).click();
@@ -57,7 +58,7 @@ test('short laptop viewports retain the floating gallery and working controls',a
  await expect(gallery.locator('[data-gallery-current]')).toHaveText('04');
  await expect(gallery.locator('.gallery-card-actions').last()).toBeInViewport();
  await page.setViewportSize({width:1280,height:540});
- await expect(gallery).toHaveClass(/is-kinetic/);
+ await expect(gallery).toHaveClass(/is-kinetic/,{timeout:15000});
  await expect.poll(()=>gallery.locator('.gallery-stage').evaluate(el=>el.getBoundingClientRect().height)).toBe(540);
 });
 
