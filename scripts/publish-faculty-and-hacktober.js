@@ -12,7 +12,7 @@ const programme=eventExtras.faqs.parse(read('./data/code-sastra-programme.json')
 try{
  const result=await tx(async c=>{
   await c.query("SELECT pg_advisory_xact_lock(hashtext('publish-faculty-and-hacktober'))");
-  const found=await c.query("SELECT id FROM club.faculty WHERE lower(name) IN ('mrs ranjna','mrs. ranjna','ranjana','mrs ranjana') FOR UPDATE");
+  const found=await c.query("SELECT id FROM club.faculty WHERE lower(name) IN ('mrs ranjna','mrs. ranjna','ranjana','mrs ranjana','mrs. ranjana') FOR UPDATE");
   if(found.rowCount!==1)throw Error('Expected exactly one existing Ranjana faculty profile');
   const fields=Object.keys(faculty),values=fields.map(key=>faculty[key]);
   const updatedFaculty=(await c.query(`UPDATE club.faculty SET ${fields.map((key,i)=>`${key}=$${i+1}`).join(',')},is_active=true WHERE id=$${fields.length+1} RETURNING id,name,designation,photo,placeholder`,[...values,found.rows[0].id])).rows[0];
