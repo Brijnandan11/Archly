@@ -6,7 +6,7 @@ try{
  import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import assert from 'node:assert/strict';
  import {readStore,initial} from './src/model';import {committeeMembers} from './src/committeeMembers';import TeamSection from './src/TeamSection';import CreatorCredits from './src/CreatorCredits';
  assert.equal(committeeMembers.length,13);
- assert.deepEqual(committeeMembers.slice(0,6).map(p=>p.name),['Peeyush Yadav','Utkarsh Upadhyay','Brijnandan','Sadaf','Aryan Vishwakarma','Saloni']);
+ assert.deepEqual(committeeMembers.map(p=>p.name),['Peeyush Yadav', 'Utkarsh Upadhyay', 'Brijnandan', 'Saloni', 'Sadaf', 'Aryan Vishwakarma', 'Prince Kumar Keshri', 'Deepa Singh', 'Aditi Chaubey', 'Akash Singh', 'Priyanshu Awasthi', 'Atul Prakash Verma', 'Disha Prajapati']);
  let saved=JSON.stringify({...initial,committeeDirectoryVersion:undefined,profiles:[...initial.profiles.filter(p=>p.kind==='faculty'),{id:'student-0',kind:'student',name:'Old demo',placeholder:true}],registrations:[{id:'KEEP-ME'}]});
  globalThis.localStorage={getItem:()=>saved,setItem:(key,value)=>{saved=value}};
  const migrated=readStore();assert.equal(migrated.profiles.filter(p=>p.kind==='student').length,13);assert.equal(migrated.profiles.filter(p=>p.kind==='faculty').length,7);assert.equal(migrated.registrations[0].id,'KEEP-ME');
