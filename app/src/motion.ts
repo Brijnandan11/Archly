@@ -15,7 +15,7 @@ export async function setupMotion(container:HTMLElement,signal?:AbortSignal){
  w.__ccLenis=lenis;lenis.on('scroll',ScrollTrigger.update);
  const tick=(time:number)=>lenis.raf(time*1000);gsap.ticker.add(tick);gsap.ticker.lagSmoothing(0);
  const initialized=new WeakSet<Element>();let disposed=false,refreshTimer:any;
- const refresh=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!disposed){lenis.resize();ScrollTrigger.refresh()}},100)};
+ const refresh=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!disposed){lenis.resize();ScrollTrigger.refresh();window.dispatchEvent(new Event('club:motion-ready'))}},100)};
  const ctx=gsap.context(()=>{},container);
  function addMotion(){ctx.add(()=>{
   container.querySelectorAll('.aim-stack-scene').forEach((scene:any)=>{

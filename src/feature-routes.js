@@ -1,3 +1,4 @@
+import {newPassword} from './input-validation.js';
 import {Router} from 'express';
 import crypto from 'node:crypto';
 import argon2 from 'argon2';
@@ -11,7 +12,7 @@ import {participantUpdate,settingsSchema} from './feature-schemas.js';
 const r=Router(),admin=[auth,role('ADMIN')];
 const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
 const manualPaymentsInstalled=async c=>(await c.query("SELECT to_regclass('club.manual_payment_submissions') IS NOT NULL AS enabled")).rows[0].enabled;
-const password=z.string().min(10).max(128);
+const password=newPassword;
 const recoveryLimit=rateLimit({windowMs:15*60_000,limit:15,standardHeaders:'draft-7',legacyHeaders:false});
 const emailLimit=rateLimit({windowMs:15*60_000,limit:3,keyGenerator:req=>digest(req.body.email),standardHeaders:'draft-7',legacyHeaders:false});
 const genericReset={ok:true,message:'If an active account exists for this email, a password reset link will be sent.'};

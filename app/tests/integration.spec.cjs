@@ -281,3 +281,32 @@ test('admin action groups wrap with gaps in cards and table rows',async({page})=
   for(const width of [390,768,1280]){await page.setViewportSize({width,height:900});await expectSeparatedActions(page,'.action-group')}
  }
 });
+
+test('refresh and browser Back retain registration, admin, leader and event destinations',async({page})=>{
+ await fixture(page,{admin:true,logged:true});
+ for(const route of ['register/'+event.id,'admin','leader','forgot-password']){
+  await go(page,route);await page.reload();await expect(page).toHaveURL(new RegExp('#/'+route+'$'));
+  await expect(page.locator('.kxr-root')).toHaveCount(0);
+ }
+ await go(page,'events');await expect.poll(()=>page.locator('#section-events').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+ await page.locator('.gallery-card-image').first().click();await expect(page).toHaveURL(new RegExp('#/event/'+event.id+'$'));
+ await page.goBack();await expect(page).toHaveURL(/#\/events$/);
+ await expect.poll(()=>page.locator('#section-events').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+});
+test('required fields reject whitespace while blank optional registration fields remain valid',async({page})=>{
+ const s=await fixture(page);await go(page,'account');await page.getByRole('button',{name:'New here?'}).click();
+ await page.getByLabel('Email',{exact:false}).fill('validation@example.invalid');await page.getByLabel('Password').fill('          ');await page.getByLabel('Full name').fill('   ');
+ await page.getByRole('button',{name:'Create account',exact:true}).click();expect(call(s,'/auth/register')).toBeFalsy();
+ await page.getByLabel('Password').fill('Valid password 2026');await page.getByRole('button',{name:'Create account',exact:true}).click();expect(call(s,'/auth/register')).toBeFalsy();
+ await page.getByLabel('Full name').fill('Valid Student');
+ expect(await page.getByLabel('Phone',{exact:false}).evaluate(el=>el.required)).toBe(false);
+ await page.getByRole('button',{name:'Create account',exact:true}).click();await expect.poll(()=>Boolean(call(s,'/auth/register'))).toBe(true);
+ expect(call(s,'/auth/register').body.phone).toBe('');expect(call(s,'/auth/register').body.department).toBe('');
+});
+test('required admin and leader fields reject whitespace before API submission',async({page})=>{
+ const s=await fixture(page,{admin:true,logged:true});await go(page,'admin');
+ await page.getByRole('navigation',{name:'Admin workspace'}).getByRole('button',{name:'Events',exact:true}).click();await page.getByRole('button',{name:'Edit event',exact:true}).click();
+ await page.getByLabel('Title',{exact:false}).first().fill('   ');await page.getByRole('button',{name:'Save',exact:true}).click();expect(call(s,'/admin/events/'+event.id,'PATCH')).toBeFalsy();
+ await page.getByRole('button',{name:'Close dialog',exact:true}).click();await go(page,'leader');
+ await page.getByLabel('Leader code').fill('   ');await page.getByLabel('Password').fill('   ');await page.getByRole('button',{name:'Open dashboard'}).click();expect(call(s,'/leader/login')).toBeFalsy();
+});

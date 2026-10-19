@@ -5,15 +5,15 @@ test.beforeEach(async({page})=>{
  await page.route('**/api/**',route=>route.fulfill({json:route.request().url().includes('/settings')?{}:[]}));
 });
 
-test('refresh returns an internal route and scroll position to the beginning',async({page})=>{
+test('refresh preserves the selected section instead of redirecting to the hero',async({page})=>{
  await page.goto('/#/events');
  await page.getByRole('button',{name:'SKIP INTRO'}).click();
  await expect(page).toHaveURL(/#\/events$/);
  await page.evaluate(()=>scrollTo(0,500));
  await page.reload();
- await expect(page).toHaveURL(/#\/$/);
+ await expect(page).toHaveURL(/#\/events$/);
  await page.getByRole('button',{name:'SKIP INTRO'}).click();
- await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+ await expect.poll(()=>page.locator('#section-events').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
 });
 
 test('hover waits for decoded artwork set and draws a varied trail',async({page})=>{
