@@ -46,3 +46,9 @@ html.club-is-loading,html.club-is-loading body{overflow:hidden}
 .preloader-skip{transition:color .25s ease,border-color .25s ease,background-color .25s ease,transform .3s cubic-bezier(.22,1,.36,1)}
 .preloader-skip:hover{background:#18181708;transform:translateY(-2px)}
 @media(prefers-reduced-motion:reduce){.preloader-skip{transition:none}.preloader-skip:hover{transform:none}}
+
+/* Same compact action shape as the loaded site. */
+.preloader-skip{min-height:44px;border-radius:8px;border:1px solid #b9b4ab;background:#e7e2d8;color:#28251f;font:600 11px/1.4 Arial,sans-serif;letter-spacing:.04em;padding:12px 16px}
+.preloader-skip:hover{background:#f7f3e9;border-color:#82786e;color:#211d18}
+.preloader-skip:active{transform:translateY(1px)}
+.preloader-skip:focus-visible{outline:2px solid #a12c24;outline-offset:4px}

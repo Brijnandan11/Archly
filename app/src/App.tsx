@@ -18,11 +18,11 @@ import './vibe.css';
 import './events.css';
 import './typography.css';
 import './event-contrast.css';
-import './buttons.css';
 import './events-reference.css';
 import './editorial-polish.css';
 import './workspace.css';
 import './footer-motion.css';
+import './buttons.css';
 import PageGuide from './PageGuide';
 import {CustomCursor,ScrollHome,sectionTarget,scrollToChapter} from './Journey';
 function Footer({store}:any){const s=store.settings;return <footer className="site-footer ink"><div className="footer-cta"><Label>GOOD IDEAS START WITH A CONVERSATION</Label><a href="#/contact-form">LET’S BUILD<br/>WHAT’S NEXT <span aria-hidden="true">↗</span></a></div><div className="footer-columns"><div><a className="footer-mark" href="#/"><img className="club-logo-mark" src="/assets/club-symbol.svg" alt="Coding Club" width="133" height="98"/></a><h3>{s.clubName}</h3><p>{s.college}<br/>{s.department}</p></div><div><Label>EXPLORE</Label>{navItems.map(([a,b])=><a key={b} href={'#'+b}>{a}</a>)}</div><div><Label>THE WORKSPACE</Label><a href="#/leader">Leader portal ↗</a><a href="#/registrations">My registrations ↗</a><a href="#/account">My account ↗</a><a href="#/admin">Admin workspace ↗</a>{s.github&&<a href={s.github} target="_blank" rel="noreferrer">GitHub ↗</a>}{s.linkedin&&<a href={s.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>}</div><div><Label>SAY HELLO</Label>{s.email?<a href={'mailto:'+s.email}>{s.email}</a>:<p>Have a question?<br/>Start a conversation.</p>}<a href="#/contact-form">Contact the club ↗</a></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} {s.clubName}</span><span>CREATE. CODE. CONQUER.</span><span>CREATE. CODE. CONQUER.</span></div></footer>}

@@ -1,8 +1,8 @@
 import ResilientImage from './ResilientImage';
 import React,{useEffect,useRef,useState} from 'react';
 import {fmt,money,canRegister} from './model';
-export function Arrow(){return <span aria-hidden="true">↗</span>}
-export function Button({children,onClick,href,kind='',...rest}:any){return href?<a className={'btn '+(kind==='outline'?'secondary':kind)} href={/^https?:\/\//.test(href)?href:'#'+href} {...rest}>{children}<Arrow/></a>:<button className={'btn '+(kind==='outline'?'secondary':kind)} onClick={onClick} {...rest}>{children}<Arrow/></button>}
+export function Arrow(){return <span className="btn-arrow" aria-hidden="true">↗</span>}
+export function Button({children,onClick,href,kind='',...rest}:any){return href?<a className={'btn '+(kind==='outline'?'secondary':kind)} href={/^https?:\/\//.test(href)?href:'#'+href} {...rest}><span className="btn-label">{children}</span><Arrow/></a>:<button className={'btn '+(kind==='outline'?'secondary':kind)} onClick={onClick} {...rest}><span className="btn-label">{children}</span><Arrow/></button>}
 export function Label({children}:any){return <div className="eyeline"><span/> {children}</div>}
 export function PageTitle({label,title,accent,copy,tone='paper'}:any){return <header className={'page-title '+tone}><Label>{label}</Label><h1 className="reveal">{title}<br/><em>{accent}</em></h1>{copy&&<p className="page-copy reveal">{copy}</p>}<span className="title-flower" aria-hidden="true">✳</span></header>}
 export function SectionHead({label,title,link,linkLabel='Explore more'}:any){return <div className="section-head reveal"><div><Label>{label}</Label><h2>{title}</h2></div>{link&&<Button href={link} kind="outline">{linkLabel}</Button>}</div>}

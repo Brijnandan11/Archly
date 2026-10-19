@@ -220,3 +220,26 @@ test('published programme shows nine activities and opens nine-rupee registratio
  await page.getByRole('link',{name:'Register for this event',exact:true}).click();
  await expect(page.getByRole('heading',{name:/sign in/i})).toBeVisible();
 });
+
+test('shared actions stay readable, keyboard accessible and usable on mobile',async({page})=>{
+ await fixture(page,{admin:true,logged:true});
+ await go(page,'admin');
+ await page.getByRole('navigation',{name:'Admin workspace'}).getByRole('button',{name:'Events',exact:true}).click();
+ const create=page.getByRole('button',{name:'Create event',exact:true});
+ await expect(create).toBeVisible();
+ const style=await create.evaluate(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return {color:s.color,bg:s.backgroundColor,radius:s.borderRadius,height:r.height,labelSize:getComputedStyle(el.querySelector('.btn-label')).fontSize}});
+ expect(style.radius).toBe('8px');expect(style.height).toBeGreaterThanOrEqual(44);expect(style.labelSize).toBe('13px');
+ function luminance(rgb){const c=rgb.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return c[0]*.2126+c[1]*.7152+c[2]*.0722}
+ const a=luminance(style.color),b=luminance(style.bg);expect((Math.max(a,b)+.05)/(Math.min(a,b)+.05)).toBeGreaterThanOrEqual(4.5);
+ await create.focus();await page.keyboard.press('Tab');await page.keyboard.press('Shift+Tab');await expect(create).toBeFocused();expect(await create.evaluate(el=>getComputedStyle(el).outlineStyle)).toBe('solid');
+ await page.screenshot({path:'/tmp/codingclub-admin-buttons-desktop.png',fullPage:true});
+ await create.click();await expect(page.getByRole('dialog')).toBeVisible();
+ const close=page.getByRole('button',{name:'Close dialog',exact:true});await expect(close).toBeVisible();await close.click();
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await go(page,'leader');await expect(page.getByRole('button',{name:'Open dashboard'})).toBeVisible();
+ await page.screenshot({path:'/tmp/codingclub-leader-buttons-mobile.png',fullPage:true});
+ await go(page,'contact-form');const send=page.getByRole('button',{name:'Send message'});await expect(send).toBeVisible();
+ expect(await send.evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+ await page.screenshot({path:'/tmp/codingclub-contact-buttons-mobile.png',fullPage:true});
+});

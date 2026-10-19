@@ -1,37 +1,68 @@
-/* Filled actions use the club's coral, cream, and lime accents. */
-.club-app .btn,.club-app .ink .btn:not(.lime){background:#ff806b;border-color:#ff806b;color:#211512;box-shadow:0 4px 0 #a9382e;}
-.club-app .btn.secondary,.club-app .btn.outline,.club-app .ink .btn.secondary,.club-app .ink .btn.outline{background:#eee9de;border-color:#eee9de;color:#221f26;box-shadow:0 4px 0 #82796f;}
-.club-app .btn.lime,.club-app .ink .btn.lime{background:#d8ee9a;border-color:#d8ee9a;color:#202719;box-shadow:0 4px 0 #6a7e42;}
-.club-app .btn:hover{background:#ff9c89;border-color:#ff9c89;color:#211512;transform:translateY(-2px)}
-.club-app .btn.secondary:hover,.club-app .btn.outline:hover{background:#fffaf0;border-color:#fffaf0;color:#221f26}
-.club-app .btn.lime:hover{background:#e5ffad;border-color:#e5ffad;color:#202719}
-.club-app .btn:active{transform:translateY(2px);box-shadow:none}
-.club-app .filter-row button{background:#34313e;border-color:#5f586d;color:#f5f1e8}
-.club-app .filter-row button.active,.club-app .filter-row button:hover{background:#d8ee9a;border-color:#d8ee9a;color:#202719}
-.club-app .gallery-card-actions>a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;background:#eee9de;border:1px solid #eee9de;border-radius:5px;color:#211f27;font-weight:700;transition:background .2s,transform .2s}
-.club-app .gallery-card-actions>a:hover,.club-app .gallery-past .gallery-card-actions>a:hover{background:#fffaf0;border-color:#fffaf0;color:#211f27;transform:translateY(-2px)}
-.club-app .gallery-card-actions>a[href*='/register/']{background:#d8ee9a;border-color:#d8ee9a;color:#202719}
-.club-app .gallery-card-actions>a[href*='/register/']:hover{background:#e5ffad;border-color:#e5ffad;color:#202719}
-.club-app .gallery-controls button{background:#24212d;border-color:#24212d;color:#fff5e8}
-.club-app .gallery-past .gallery-controls button{background:#d8ee9a;border-color:#d8ee9a;color:#202719}
-.club-app .gallery-controls button:hover{background:#ff806b;border-color:#ff806b;color:#211512}
-.club-app .gallery-skip{padding:11px 15px;background:#24212d;color:#fff5e8;border:1px solid #24212d;border-radius:5px;min-height:44px;display:inline-flex;align-items:center}
-.club-app .gallery-past .gallery-skip{background:#eee9de;color:#211f27;border-color:#eee9de}
-.club-app .icon-btn,.club-app .toast button,.club-app .stack-menu-close{background:#eee9de;border:1px solid #eee9de;color:#211f27;border-radius:8px}
-.club-app .return-to-club,.club-app .floating-link{background:#eee9de;color:#211f27;border-color:#eee9de}
+/* Club action system: 8px controls, 44px touch targets, restrained feedback.
+   Public CTAs are coral; workspace actions lime; secondary actions stay neutral. */
+.club-app{--action-bg:#ff806b;--action-fg:#211512;--action-hover:#ff9b88;--action-border:#ff806b;--action-ring:#d04d3f;--action-radius:8px;--action-ease:cubic-bezier(.2,.8,.2,1)}
+.club-app .workspace-route{--action-bg:#d8ee9a;--action-fg:#202719;--action-hover:#e5f8b6;--action-border:#d8ee9a}
+.club-app :is(.btn,.primary-cta,.gallery-card-actions>a,.gallery-skip,.archive-recap,.archive-next){display:inline-flex;align-items:center;justify-content:space-between;gap:20px;min-height:48px;max-width:100%;padding:13px 20px;border:1px solid var(--action-border);border-radius:var(--action-radius);background:var(--action-bg);color:var(--action-fg);font:650 13px/1.4 var(--body,Arial,sans-serif);letter-spacing:.005em;text-transform:none;text-decoration:none;text-align:left;vertical-align:middle;box-shadow:inset 0 1px 0 #ffffff30,0 2px 3px #00000014;cursor:pointer;transition:background-color .18s var(--action-ease),border-color .18s var(--action-ease),color .18s var(--action-ease),box-shadow .18s var(--action-ease),transform .18s var(--action-ease);-webkit-tap-highlight-color:transparent}
+.club-app :is(.btn,.primary-cta,.gallery-card-actions>a,.gallery-skip,.archive-recap,.archive-next):not(:disabled):not([aria-disabled=true]):active{transform:translateY(1px);box-shadow:inset 0 1px 2px #00000020}
+.club-app .btn .btn-label{font:inherit;letter-spacing:inherit;min-width:0;transform:none}
+.club-app .btn .btn-arrow{display:inline-flex;align-items:center;justify-content:center;flex:0 0 25px;width:25px;height:25px;border-left:1px solid currentColor;padding-left:10px;font:400 18px/1 var(--body);opacity:.75;transition:transform .18s var(--action-ease)}
+.club-app .btn+.btn{margin-inline-start:8px}
+/* Explicit variants retain their meaning inside dialogs and nested surfaces. */
+.club-app :is(.btn.secondary,.btn.outline,.gallery-card-actions>a:first-child,.gallery-skip,.archive-recap){--action-bg:#25242c;--action-fg:#f2eee7;--action-hover:#35333e;--action-border:#57535f;background:var(--action-bg);border-color:var(--action-border);color:var(--action-fg)}
+.club-app :is(.btn.lime,.btn.success,.gallery-card-actions>a:nth-child(2),.archive-next){--action-bg:#d8ee9a;--action-fg:#202719;--action-hover:#e5f8b6;--action-border:#d8ee9a}
+.club-app .btn.danger{--action-bg:#3d2427;--action-fg:#ffc1b8;--action-hover:#543034;--action-border:#a45d60}
+.club-app .btn.warning{--action-bg:#3b3122;--action-fg:#f8dba6;--action-hover:#50412b;--action-border:#967944}
+.club-app :is(.ink .btn,.detail-top .btn,.detail-aside .btn,.ink .detail-aside .btn){background:var(--action-bg);color:var(--action-fg);border-color:var(--action-border);box-shadow:inset 0 1px 0 #ffffff30,0 2px 3px #00000014}
+.club-app .gallery-card-actions{gap:8px;flex-wrap:wrap}
+.club-app .gallery-card-actions>a{min-height:44px;padding:10px 14px;gap:12px;font-size:12px}
+.club-app .gallery-skip{min-height:44px;padding:10px 14px;font-size:12px}
+/* Secondary utilities: filters, pagination, table actions, dialogs and retries. */
+.club-app :is(button.text-link,.list-item button,.admin-row-actions button,td button,.filter-row button,.trg-controls button,.gallery-controls button,.icon-btn,.toast button,.stack-menu-close,.notice>button,.admin-actions button){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #57535f;border-radius:var(--action-radius);background:#25242c;color:#f2eee7;font:600 12px/1.4 var(--body,Arial,sans-serif);letter-spacing:.01em;box-shadow:none;text-decoration:none;transition:background-color .18s,border-color .18s,color .18s,transform .18s}
+.club-app :is(.gallery-controls button,.trg-controls button,.icon-btn,.toast button){width:44px;min-width:44px;padding:8px;font-size:18px}
+.club-app :is(.filter-row button.active,.filter-row button[aria-pressed=true],.trg-controls button[aria-pressed=true]){background:#d8ee9a;border-color:#d8ee9a;color:#202719}
+.club-app .filter-row{gap:6px;flex-wrap:wrap}
+/* Admin navigation stays quiet so the page's actual action remains prominent. */
+.club-app .workspace-route .admin-nav nav button{display:flex;align-items:center;gap:16px;min-height:44px;margin:0;padding:12px 14px;border:1px solid transparent;border-radius:var(--action-radius);background:transparent;color:#bab5c2;font:600 12px/1.45 var(--body);text-align:left;transition:background-color .18s,color .18s,border-color .18s}
+.club-app .workspace-route .admin-nav nav button.active{background:#d8ee9a;color:#202719;border-color:#d8ee9a}
+.club-app .workspace-route .admin-nav nav button>span{margin-left:auto;opacity:.65}
+.club-app .workspace-route .admin-row-actions{gap:8px}
+.club-app .workspace-route .admin-main>.btn{margin-bottom:20px}
+.club-app .workspace-route .admin-tab-body>.btn{margin-bottom:22px}
+.club-app .workspace-route .admin-event-grid .form-card>.btn{margin:0 8px 10px 0}
+.club-app :is(.form-summary,.detail-aside) .btn-label{white-space:normal}
+.club-app .workspace-route td .btn{min-height:44px;padding:10px 13px;font-size:12px;margin-block:3px}
+.club-app .btn-label{white-space:nowrap}
+.club-app .workspace-route .admin-two .form-card .btn{margin-inline:0}
+.club-app .page-guide-trigger{min-height:44px;border-radius:8px;border:1px solid #57535f;background:#25242c;color:#f2eee7;box-shadow:0 3px 12px #0003}
+.club-app .page-guide-trigger[aria-expanded=true]{border-color:#d8ee9a}
+.club-app .faculty-profile-details summary{min-height:44px;border-radius:8px}
+/* Upload controls use the same touch target without hiding the native field. */
+.club-app input[type=file]::file-selector-button{min-height:44px;padding:10px 14px;margin:0 12px 0 0;border:1px solid #57535f;border-radius:8px;background:#25242c;color:#f2eee7;font:600 12px/1.4 var(--body);cursor:pointer}
+.club-app :is(.menu-button,.sound-button){min-height:44px;border:1px solid #454148;border-radius:8px;padding:10px 14px;color:#eee9e2;transition:background-color .18s,border-color .18s}
+.club-app .sound-button[aria-pressed=true]{border-color:#a85c55;color:#ffb3a5;background:#ff806b0b}
+.club-app :is(.return-to-club,.floating-link){border:1px solid #57535f;border-radius:8px;background:#25242c;color:#f2eee7;min-height:44px;padding:11px 15px;font:600 12px/1.4 var(--body);display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+/* Keep signature image/typographic controls intact; give them a visible focus. */
+.club-app :is(button,a,[role=button],summary):focus-visible{outline:2px solid var(--action-ring);outline-offset:4px}
+.club-app :is(button,a,[role=button]):disabled,.club-app [aria-disabled=true]{opacity:.48;cursor:not-allowed;box-shadow:none;transform:none}
+.club-app :is(.btn,.gallery-controls button,.trg-controls button):disabled .btn-arrow{transform:none}
 .club-app .is-kinetic .gallery-card-info{position:relative;z-index:2}
 .club-app .event-showcase,.club-app .gallery-viewport{scroll-behavior:auto}
-.club-app button.text-link,.club-app .list-item button,.club-app .admin-row-actions button,.club-app td button,.club-app .trg-controls button{background:#eee9de;border:1px solid #eee9de;color:#211f27;padding:10px 13px;border-radius:6px;min-height:40px}
-.club-app .admin-nav nav button{background:#302c39;border:1px solid #4f465d;color:#f5f1e8;padding:13px;border-radius:6px;margin-bottom:6px}
-.club-app .admin-nav nav button.active{background:#d8ee9a;border-color:#d8ee9a;color:#202719}
-.club-app .workspace-route .admin-main .btn{min-height:42px;padding:11px 15px;gap:14px;border-radius:7px;background:#c8b8ef;border:1px solid #c8b8ef;color:#211b2a;box-shadow:none;font-size:11px;font-weight:650;letter-spacing:.02em;transition:background .18s,border-color .18s,color .18s,transform .18s}
-.club-app .workspace-route .admin-main .btn>span{font-size:16px}
-.club-app .workspace-route .admin-main .btn:hover{background:#d7caf6;border-color:#d7caf6;color:#211b2a;box-shadow:none;transform:translateY(-1px)}
-.club-app .workspace-route .admin-main .btn:active{transform:translateY(0);box-shadow:none}
-.club-app .workspace-route .admin-main .btn.secondary,.club-app .workspace-route .admin-main .btn.outline{background:#1b1b23;border-color:#42414c;color:#e8e1ef}
-.club-app .workspace-route .admin-main .btn.secondary:hover,.club-app .workspace-route .admin-main .btn.outline:hover{background:#282631;border-color:#77708b;color:#fff}
-.club-app .workspace-route .admin-nav nav button{display:flex;align-items:center;min-height:44px;padding:10px 12px;margin:0 0 5px;border-radius:7px;background:transparent;border-color:transparent;color:#aaa5b4;font-size:11px;transition:background .18s,border-color .18s,color .18s}
-.club-app .workspace-route .admin-nav nav button:hover{background:#292631;border-color:#393542;color:#f3edf8}
-.club-app .workspace-route .admin-nav nav button.active{background:#d8ee9a;border-color:#d8ee9a;color:#202719;font-weight:700}
-.club-app .workspace-route .admin-nav nav button:disabled{opacity:.55}
-.club-app button.text-link:hover,.club-app .list-item button:hover,.club-app .admin-row-actions button:hover,.club-app td button:hover{background:#d8ee9a;border-color:#d8ee9a;color:#202719}
+@media(hover:hover) and (pointer:fine){
+ .club-app :is(.btn,.primary-cta,.gallery-card-actions>a,.gallery-skip,.archive-recap,.archive-next):not(:disabled):not([aria-disabled=true]):hover{background:var(--action-hover);border-color:var(--action-border);color:var(--action-fg);transform:translateY(-1px);box-shadow:inset 0 1px 0 #ffffff30,0 3px 7px #00000020}
+ .club-app .btn:not(:disabled):not([aria-disabled=true]):hover .btn-arrow{transform:translate(2px,-2px)}
+ .club-app :is(button.text-link,.list-item button,.admin-row-actions button,td button,.filter-row button,.trg-controls button,.gallery-controls button,.icon-btn,.toast button,.stack-menu-close,.notice>button,.admin-actions button):not(:disabled):hover{background:#383540;border-color:#89818f;color:#fff7ee}
+ .club-app .workspace-route .admin-nav nav button:not(:disabled):not(.active):hover{background:#26252e;border-color:#45414e;color:#f2eee7}
+ .club-app :is(.menu-button,.sound-button):hover{background:#ffffff09;border-color:#80737b}
+}
+@media(max-width:600px){
+ .club-app :is(.btn,.primary-cta){padding:12px 16px;gap:14px;font-size:13px}
+ .club-app .btn+.btn{margin-inline-start:0;margin-top:8px}
+ .club-app .btn-label{white-space:normal}
+ .club-app .header-actions{gap:8px}
+ .club-app :is(.menu-button,.sound-button){padding:10px;font-size:9px}
+ .club-app .gallery-card-actions>a{flex:1 1 auto}
+}
+@media(prefers-reduced-motion:reduce){
+ .club-app :is(.btn,.primary-cta,.gallery-card-actions>a,.gallery-skip,.archive-recap,.archive-next,.btn-arrow,.filter-row button,.admin-nav nav button,.menu-button,.sound-button){transition:none;transform:none!important}
+}
+@media(forced-colors:active){.club-app :is(.btn,button,.primary-cta,.gallery-card-actions>a){border:1px solid ButtonText;box-shadow:none}.club-app :is(button,a):focus-visible{outline:2px solid Highlight}}
