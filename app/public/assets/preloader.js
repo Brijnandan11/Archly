@@ -7,6 +7,16 @@
   let raf=0,removed=false,finishing=false,appReady=!!window.__clubAppReady||!!root?.firstElementChild,lastStep=-1,stickerIndex=0,lastPointer=-1000,lastPosition=null,pendingPosition=null,inside=false,stickersRequested=false;
   let trailRaf=0,followPosition=null;
   const timers=new Set(),nodes=[],readyIcons=[],preloaded=[];
+  let heroFontReady=!document.fonts;
+  function fontReady(loaded){
+    heroFontReady=true;
+    if(loaded&&!removed&&!finishing&&!window.__clubIntroDone)document.documentElement.classList.add('club-hero-font-ready');
+  }
+  if(document.fonts){
+    const heroFont='800 32px "Club Hero"';
+    if(document.fonts.check(heroFont))fontReady(true);
+    else document.fonts.load(heroFont,'CREATE CODE CONQUER').then(fonts=>fontReady(fonts.length>0),()=>fontReady(false));
+  }
   const later=(fn,ms)=>{const id=setTimeout(()=>{timers.delete(id);fn()},ms);timers.add(id);return id};
   function cleanup(){if(removed)return;removed=true;cancelAnimationFrame(raf);cancelAnimationFrame(trailRaf);timers.forEach(clearTimeout);timers.clear();overlay.remove();root?.removeAttribute('inert');root?.removeAttribute('aria-hidden');document.documentElement.classList.remove('club-is-loading');window.__clubIntroDone=true;document.removeEventListener('keydown',key);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('club:ready',ready);window.removeEventListener('pageshow',pageShow);overlay.removeEventListener('pointermove',pointer);overlay.removeEventListener('pointerenter',pointer);preloaded.forEach(image=>{image.onload=null;image.onerror=null});overlay.removeEventListener('pointerleave',clearTrail);window.dispatchEvent(new Event('club:loaded'))}
   function key(event){if(event.key==='Escape')cleanup()}
@@ -36,8 +46,8 @@
   // inserts an empty image or waits for a second request. Failed assets are skipped.
   function setStep(step){if(step===lastStep)return;lastStep=step;reels.forEach(reel=>{reel.style.transform=`translateY(-${step*10}%)`})}
   function finish(){if(finishing||removed)return;finishing=true;cancelAnimationFrame(raf);setStep(9);if(!counter||!dot||reduced){cleanup();return}const box=counter.getBoundingClientRect();dot.style.left=(box.left+box.width/2-6)+'px';dot.style.top=(box.top+box.height/2-6)+'px';overlay.classList.add('is-finishing');later(()=>{dot.style.opacity='1';overlay.classList.add('is-leaving')},120);later(cleanup,280)}
-  function tick(now){if(removed||finishing)return;if(window.__clubIntroDone){cleanup();return}try{const elapsed=now-started;setStep(Math.min(appReady?9:8,Math.floor(elapsed/minimum*9)));if(appReady&&elapsed>=minimum){finish();return}raf=requestAnimationFrame(tick)}catch{cleanup()}}
-  function ready(){appReady=true;if(reduced||performance.now()-started>=minimum)finish()}
+  function tick(now){if(removed||finishing)return;if(window.__clubIntroDone){cleanup();return}try{const elapsed=now-started;setStep(Math.min(appReady?9:8,Math.floor(elapsed/minimum*9)));if(appReady&&heroFontReady&&elapsed>=minimum){finish();return}raf=requestAnimationFrame(tick)}catch{cleanup()}}
+  function ready(){appReady=true;if(reduced||(heroFontReady&&performance.now()-started>=minimum))finish()}
   overlay.querySelector('button')?.addEventListener('click',cleanup);document.addEventListener('keydown',key);document.addEventListener('visibilitychange',visibility);window.addEventListener('pageshow',pageShow);overlay.addEventListener('pointermove',pointer,{passive:true});overlay.addEventListener('pointerenter',pointer,{passive:true});overlay.addEventListener('pointerleave',clearTrail);window.addEventListener('club:ready',ready);
   // Independent of fonts, image downloads, or the animation frame clock.
   later(cleanup,4000);

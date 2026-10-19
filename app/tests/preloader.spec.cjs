@@ -48,3 +48,29 @@ test('faculty has two leaders above one centered leader, with remaining profiles
   expect(await page.locator('.faculty-mentor-row>.faculty-circle-card').count()).toBe(4);
  }
 });
+
+test('hero reveals with its local font and keeps Create Code Conquer unchanged',async({page})=>{
+ await page.route('https://fonts.googleapis.com/**',route=>route.abort());
+ await page.goto('/',{waitUntil:'domcontentloaded'});
+ await page.locator('#club-preloader').waitFor({state:'hidden',timeout:6000});
+ await expect(page.locator('.kxr-name h2')).toHaveText(['Create','Code','Conquer']);
+ expect(await page.evaluate(()=>document.documentElement.classList.contains('club-hero-font-ready'))).toBe(true);
+ const font=await page.locator('.kxr-name h2').first().evaluate(el=>getComputedStyle(el).fontFamily);
+ expect(font).toContain('Club Hero');
+});
+
+test('a font arriving after the intro cannot change the visible hero lettering',async({page})=>{
+ let release;
+ const hold=new Promise(resolve=>{release=resolve;});
+ await page.route('**/fonts/barlow-condensed-800.ttf',async route=>{await hold;await route.continue();});
+ await page.goto('/',{waitUntil:'commit'});
+ await page.locator('#club-preloader').waitFor({state:'hidden',timeout:6000});
+ const measure=()=>page.locator('.kxr-name h2').evaluateAll(nodes=>nodes.map(el=>{const range=document.createRange();range.selectNodeContents(el);return {text:el.textContent,font:getComputedStyle(el).fontFamily,width:range.getBoundingClientRect().width};}));
+ const before=await measure();
+ release();
+ await page.evaluate(()=>document.fonts.load('800 32px "Club Hero"'));
+ await page.waitForTimeout(200);
+ const after=await measure();
+ expect(after).toEqual(before);
+ expect(await page.evaluate(()=>document.documentElement.classList.contains('club-hero-font-ready'))).toBe(false);
+});

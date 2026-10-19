@@ -1,3 +1,7 @@
+@font-face{font-family:'Club Hero';src:url('/assets/fonts/barlow-condensed-800.ttf') format('truetype');font-style:normal;font-weight:800;font-display:block}
+/* Choose the heading font underneath the intro, then keep that choice fixed. */
+.kxr-root .kxr-name h2{font-family:Impact,'Arial Narrow',sans-serif}
+.club-hero-font-ready .kxr-root .kxr-name h2{font-family:'Club Hero',Impact,'Arial Narrow',sans-serif}
 html.club-is-loading,html.club-is-loading body{overflow:hidden}
 .club-preloader{--digit-size:clamp(118px,15vw,200px);position:fixed;inset:0;z-index:1000;background:#080808;color:#ef3333;overflow:hidden;isolation:isolate;transition:opacity .6s cubic-bezier(.94,0,.06,1)}
 .loader-header{position:absolute;top:clamp(25px,5vw,64px);left:clamp(25px,5vw,72px);display:flex;align-items:center;gap:12px;z-index:2;font:500 10px Arial,sans-serif;letter-spacing:.17em;color:#a39b9b}.loader-header strong{font:700 25px/1 monospace;color:#ef3333;letter-spacing:-.15em}.loader-label{position:absolute;left:clamp(25px,5vw,72px);bottom:clamp(25px,4vw,52px);font:9px monospace;color:#8a8080;letter-spacing:.14em}
