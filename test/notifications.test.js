@@ -18,10 +18,11 @@ function fakeOutbox(t){
 
 test('outbox delivery renders mail, uses stable idempotency key and marks sent',async t=>{
  const {task,statements}=fakeOutbox(t);
+ env(t,'MAIL_REPLY_TO','codingclub@gecazamgarh.ac.in');
  t.mock.method(globalThis,'fetch',async(url,options)=>{
   assert.equal(url,'https://api.resend.com/emails');
   assert.equal(options.headers['Idempotency-Key'],task.id);
-  const body=JSON.parse(options.body);assert.deepEqual(body.to,[task.recipient]);assert.match(body.text,/TEST001.*Test event/);
+  const body=JSON.parse(options.body);assert.equal(body.reply_to,'codingclub@gecazamgarh.ac.in');assert.deepEqual(body.to,[task.recipient]);assert.match(body.text,/TEST001.*Test event/);
   return Response.json({id:'email_test'});
  });
  assert.deepEqual(await deliverNotifications(2),{completed:1,failed:0});

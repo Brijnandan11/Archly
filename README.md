@@ -54,7 +54,8 @@ Before enabling it on a database, back up the database and apply `sql/004_manual
 
 - `UPI_VPA` — receiving UPI ID; must match the destination encoded in the displayed QR.
 - `SUPABASE_URL` and `SUPABASE_SECRET_KEY` — already used by the API, required to write private payment evidence and issue short-lived screenshot links.
-- `RESEND_API_KEY` and `MAIL_FROM` — existing email setup; confirmation notices are queued only after approval and use the backend's retrying outbox.
+- `RESEND_API_KEY` and `MAIL_FROM` — existing email setup; confirmation notices are queued only after approval and use the backend's retrying outbox. `MAIL_FROM` must use a domain verified in Resend.
+- `MAIL_REPLY_TO` — club reply address, currently `codingclub@gecazamgarh.ac.in`. Replies go to this mailbox while the verified sender remains `noreply@codingclub.live`. To send from the college address, verify `gecazamgarh.ac.in` in Resend with the college DNS administrator before changing `MAIL_FROM`.
 - `UPI_EVENT_NAME` — optional label fallback, default `Coding Club`.
 - `UPI_QR_IMAGE_URL` — optional public QR override; otherwise the supplied QR is used until an admin replaces it with a private stored image.
 
