@@ -26,7 +26,9 @@ async function fixture(page,{admin=false,logged=false,fee=0,pending=false,noLead
   else if(path==='/registrations/me')data=state.registrations;
   else if(path==='/registrations/'+registration.id+'/cancel'){state.registrations[0].status='CANCELLED';data=state.registrations[0]}
   else if(path==='/payments/config')data={enabled:true,upi_id:'codingclub@example',qr_url:'/assets/payment/coding-club-upi-qr.png',instructions:'Pay and submit your receipt.',amount_rupees:9,event_name:'Coding Club'};
-  else if(path==='/registrations/'+registration.id+'/payment-status')data={registration:{...registration,status:'PENDING_PAYMENT',registration_fee:900,registration_ref:'UPI-TEST-123456789012'},submissions:[]};
+  else if(path==='/registrations/'+registration.id+'/payment-status')data={registration:{...registration,registration_code:null,status:'PENDING_PAYMENT',registration_fee:900,registration_ref:'UPI-TEST-123456789012',...state.registrations[0]},submissions:[]};
+  else if(path==='/payments/extract-utr')data={confidence:.99,candidates:[{reference:'TEST123456789',confidence:.98}],fields:{amount_rupees:9}};
+  else if(path==='/payments/submit'){state.registrations[0]={...state.registrations[0],status:'PENDING_VERIFICATION',registration_code:null};data={id:'proof-1',status:'PENDING'};status=201}
   else if(path==='/admin/payments/upi')data=[];
   else if(path==='/admin/payments/upi/stats')data={total_submissions:0,pending_verification:0,under_review:0,approved:0,rejected:0,confirmed_registrations:0,verified_collection:0};
   else if(path==='/leader/login')data={token:'leader-token',leader_id:leader.leader_code,event_id:event.id};
@@ -78,8 +80,18 @@ test('paid registration opens Coding Club UPI payment and keeps proof pending',a
 test('reopening an unpaid registration resumes QR payment instead of saying already registered',async({page})=>{
  const s=await fixture(page,{logged:true,fee:900,pending:true});await go(page,'register/'+event.id);await page.getByRole('checkbox').check();await page.getByRole('button',{name:/Register and pay/}).click();await expect(page.getByRole('heading',{name:'Registration payment'})).toBeVisible();await expect(page.getByText('Complete your UPI payment and upload the screenshot.')).toBeVisible();expect(call(s,'/events/'+event.id+'/register')).toBeTruthy();expect(s.unexpected).toEqual([]);
 });
+test('payment proof submits with a corrected UTR and no optional payment date',async({page})=>{
+ const s=await fixture(page,{logged:true,fee:900,pending:true});await go(page,'payment/'+registration.id);
+ await expect(page.getByLabel('Payment date and time (optional)')).toHaveJSProperty('required',false);
+ await page.locator('input[type=file]').setInputFiles({name:'test-proof.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVZkAAAAASUVORK5CYII=','base64')});
+ await expect(page.getByPlaceholder('Enter the reference shown in your UPI app')).toHaveValue('TEST123456789');
+ await page.getByPlaceholder('Enter the reference shown in your UPI app').fill('CORRECTED123456');
+ await page.getByRole('button',{name:'Submit for verification'}).click();
+ await expect(page.getByText('Your payment details have been submitted successfully.',{exact:false})).toBeVisible();
+ expect(call(s,'/payments/submit')).toBeTruthy();expect(call(s,'/payments/submit').body).toContain('CORRECTED123456');expect(s.unexpected).toEqual([]);
+});
 test('pending cancellation and backend validation errors are shown',async({page})=>{
- const s=await fixture(page,{logged:true,pending:true});await go(page,'registrations');await expect(page.getByRole('link',{name:'Continue UPI payment'})).toBeVisible();await page.getByRole('button',{name:'Cancel registration'}).click();await expect(page.getByText('CANCELLED',{exact:true})).toBeVisible();expect(call(s,'/registrations/'+registration.id+'/cancel')).toBeTruthy();await go(page,'contact-form');await page.route('**/api/contact',r=>r.fulfill({status:400,json:{error:'Validation failed',details:[{path:'message',message:'Must contain at least 10 characters'}]}}));for(const [label,value] of [['Name','AB'],['Email',user.email],['Subject','Hello'],['Message','short']])await page.getByRole('textbox',{name:new RegExp('^'+label+' \*')}).fill(value);await page.getByRole('button',{name:'Send message'}).click();await expect(page.getByRole('alert')).toContainText('message: Must contain');
+ const s=await fixture(page,{logged:true,pending:true});await go(page,'registrations');await expect(page.getByRole('link',{name:'Pay by UPI QR and upload screenshot'})).toBeVisible();await page.getByRole('button',{name:'Cancel registration'}).click();await expect(page.getByText('CANCELLED',{exact:true})).toBeVisible();expect(call(s,'/registrations/'+registration.id+'/cancel')).toBeTruthy();await go(page,'contact-form');await page.route('**/api/contact',r=>r.fulfill({status:400,json:{error:'Validation failed',details:[{path:'message',message:'Must contain at least 10 characters'}]}}));for(const [label,value] of [['Name','AB'],['Email',user.email],['Subject','Hello'],['Message','short']])await page.getByRole('textbox',{name:new RegExp('^'+label+' \*')}).fill(value);await page.getByRole('button',{name:'Send message'}).click();await expect(page.getByRole('alert')).toContainText('message: Must contain');
 });
 test('contact submits to backend and non-admin cannot open workspace',async({page})=>{
  const s=await fixture(page,{logged:true});await go(page,'contact-form');for(const [label,value] of [['Name',user.full_name],['Email',user.email],['Subject','Hello workshop'],['Message','Please share workshop details.']])await page.getByRole('textbox',{name:new RegExp('^'+label+' \*')}).fill(value);await page.getByRole('button',{name:'Send message'}).click();await expect(page.getByText('Your message has been received by the club.')).toBeVisible();expect(call(s,'/contact').body.message).toBe('Please share workshop details.');await go(page,'admin');await expect(page.getByRole('alert')).toContainText('does not have administrator access');expect(s.calls.some(c=>c.path.startsWith('/admin/'))).toBe(false);
