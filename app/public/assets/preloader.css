@@ -38,3 +38,7 @@ html.club-is-loading,html.club-is-loading body{overflow:hidden}
 
 .loader-club-logo{display:block;flex:0 0 auto;width:84px;height:auto;aspect-ratio:112/80;object-fit:contain;object-position:center}
 @media(max-width:650px){.loader-club-logo{width:64px}}
+
+.preloader-skip{transition:color .25s ease,border-color .25s ease,background-color .25s ease,transform .3s cubic-bezier(.22,1,.36,1)}
+.preloader-skip:hover{background:#18181708;transform:translateY(-2px)}
+@media(prefers-reduced-motion:reduce){.preloader-skip{transition:none}.preloader-skip:hover{transform:none}}
