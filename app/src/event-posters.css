@@ -17,3 +17,17 @@
 @media(min-width:1000px) and (max-height:760px){.club-app .gallery-posters.is-kinetic .gallery-rail{top:17svh}.club-app .gallery-posters.is-kinetic .gallery-card{width:27svh;flex-basis:27svh}}
 
 .event-programme{margin-top:60px}.event-programme>h2{font-size:clamp(30px,5vw,48px);margin-bottom:30px}.event-programme article{display:grid;grid-template-columns:40px 1fr;gap:20px;padding:28px 0;border-top:1px solid #ffffff25}.event-programme-number{color:#ff684f;font-size:13px;padding-top:7px}.event-programme h3{font-size:clamp(23px,3vw,32px);line-height:1.2;margin:0 0 15px}.event-programme p{font-size:16px;line-height:1.8;color:#c8c5ce;max-width:70ch;margin:0}@media(max-width:650px){.event-programme article{grid-template-columns:25px 1fr;gap:12px}}
+
+/* Browser chrome and display scaling can leave laptops with a short viewport. */
+@media(min-width:1000px) and (max-height:650px){
+ .club-app .gallery-posters.is-kinetic .gallery-stage{padding-top:5svh}
+ .club-app .gallery-posters.is-kinetic .gallery-heading{font-size:clamp(48px,12svh,78px)}
+ .club-app .gallery-posters.is-kinetic .gallery-rail{top:18svh}
+ .club-app .gallery-posters.is-kinetic .gallery-card{width:27svh;flex-basis:27svh}
+ .club-app .gallery-posters.is-kinetic .gallery-intro{display:none}
+ .club-app .gallery-posters.is-kinetic .gallery-event-title h3{font-size:18px}
+ .club-app .gallery-posters.is-kinetic .gallery-event-meta{margin-top:5px}
+ .club-app .gallery-posters.is-kinetic .gallery-card-actions{margin-top:6px}
+ .club-app .gallery-posters.is-kinetic .gallery-hud{bottom:38px;padding-top:8px}
+ .club-app .gallery-posters.is-kinetic .gallery-foot{padding-block:12px}
+}

@@ -1,7 +1,7 @@
 /** Scroll-driven floating event rails, adapted to the club's own content. */
 export function installEventGalleries(container:HTMLElement,gsap:any,ScrollTrigger:any,lenis:any){
  const media=gsap.matchMedia();
- media.add('(min-width: 1000px) and (min-height: 650px) and (prefers-reduced-motion: no-preference)',()=>{
+ media.add('(min-width: 1000px) and (prefers-reduced-motion: no-preference)',()=>{
   const cleanups:Array<()=>void>=[];
   container.querySelectorAll<HTMLElement>('[data-event-gallery]').forEach(gallery=>{
    const rail=gallery.querySelector<HTMLElement>('.gallery-rail')!,cards=Array.from(gallery.querySelectorAll<HTMLElement>('.gallery-card'));
