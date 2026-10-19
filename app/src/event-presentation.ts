@@ -1,4 +1,8 @@
 import {fmt,money} from './model';
+export function externalRegistrationUrl(event:any){
+ const value=event?.presentation?.registration_url;
+ try{return value&&new URL(value).protocol==='https:'?value:''}catch{return ''}
+}
 export function orderEvents(events:any[]){
  return [...events].sort((a,b)=>{
   const order=(event:any)=>event.presentation?.display_order??(event.slug==='code-sastra-2026'?0:['code-sastra-hacktober-2026','code-sastra-bug-bounty-2026'].includes(event.slug)?1:1000);
@@ -11,4 +15,4 @@ export function eventDates(event:any){
  return end&&end!==start?`${fmt(start)} – ${fmt(end)}`:fmt(start);
 }
 export const eventTime=(event:any)=>event.presentation?.schedule_pending?'To be announced':event.time||event.start_time?.slice(0,5)||'To be announced';
-export const eventPrice=(event:any)=>event.presentation?.registration_pending?'To be announced':money(event.fee??event.registration_fee/100);
+export const eventPrice=(event:any)=>externalRegistrationUrl(event)?'See MLH':event.presentation?.registration_pending?'To be announced':money(event.fee??event.registration_fee/100);
