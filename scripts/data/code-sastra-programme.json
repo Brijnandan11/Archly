@@ -1,0 +1,38 @@
+[
+  {
+    "q": "Hacktober 2026 — Build. Innovate. Compete.",
+    "a": "Date: 30 October 2026. A nine-hour team coding marathon bringing together participants from our college and institutions across the region to transform ideas into innovative, real-world solutions. Teams choose from a set of challenges or work on a given problem statement and develop a functional prototype within nine hours. Evaluation rounds assess different aspects of each project. The team with the highest cumulative score wins the championship title and prize money. Team format: multiple members per team. Duration: 9 hours."
+  },
+  {
+    "q": "The Debug — Build. Innovate. Compete.",
+    "a": "A competitive programming challenge testing a team’s ability to analyse code, identify errors, and implement effective solutions under pressure. Teams receive programs containing logical, syntax, or runtime errors and must locate the bugs, understand the underlying problem, and fix the code within the given time. Speed and accuracy are crucial. Skills tested: programming fundamentals, debugging, and problem solving."
+  },
+  {
+    "q": "Resume Roaster — Your Resume. Their Critique.",
+    "a": "Teams analyse sample resumes to identify common mistakes, weak points, inconsistencies, and opportunities for improvement. They present their observations and recommendations, earning points for the quality, accuracy, and creativity of their analysis. The event combines career awareness, critical thinking, communication, and a little friendly roasting. Focus: resume analysis, critical thinking, communication, and career awareness."
+  },
+  {
+    "q": "Bug Bounty — Find the Flaw. Catch the Bug.",
+    "a": "Participants receive a website or software application containing bugs and must identify and report them. Issues may include UI/UX problems, layout inconsistencies, broken buttons, navigation errors, functional bugs, responsiveness problems, and other technical glitches. Develop testing and debugging skills, attention to detail, and practical experience improving software quality."
+  },
+  {
+    "q": "Who Am I? — Clues. Connect. Identify.",
+    "a": "A deduction game in which participants identify a technology, company, platform, programming language, tool, device, or digital product from a series of clues. Clues gradually reveal features, purpose, history, capabilities, and unique characteristics. Connect the clues and identify the answer: for example, clues about a development platform might lead to GitHub. The fewer clues needed, the better the performance."
+  },
+  {
+    "q": "Tech Quiz",
+    "a": "A fast-paced individual quiz covering technology, computing, programming, cybersecurity, AI, gadgets, the internet, and tech history. Questions range from fundamental concepts to interesting facts and current developments. Speed and accuracy determine the highest score. Skills tested: technology, computing, programming, cybersecurity, AI, and general tech awareness."
+  },
+  {
+    "q": "Tech Trials — How much do you really know?",
+    "a": "A practical technology challenge that goes beyond textbook knowledge. Participants complete small technical tasks, situations, or problems within a limited time. Tasks may involve basic programming, computer operations, identifying technical concepts, or solving simple problems. The event rewards applying knowledge rather than simply remembering it. Skills tested: technical knowledge, practical skills, logic, problem solving, and awareness."
+  },
+  {
+    "q": "Syntax Shock — Read. Understand. Code.",
+    "a": "Participants receive documentation for an unfamiliar programming language and must understand its syntax, concepts, and structure before writing code to solve a given problem. The challenge develops technical adaptability, logical thinking, problem solving, and the ability to learn new technologies quickly. Build confidence exploring unfamiliar languages and applying theory to practical coding."
+  },
+  {
+    "q": "Blind Coding — Code Without Seeing.",
+    "a": "An individual coding challenge testing programming knowledge, memory, logic, and confidence. Participants write and complete programs under restricted visual conditions, relying on their understanding of syntax, algorithms, logic, and problem solving. The challenge tests how well you understand the code you write. Focus: programming, logic, memory, syntax, and problem solving."
+  }
+]

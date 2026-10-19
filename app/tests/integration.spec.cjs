@@ -191,3 +191,17 @@ test('portrait event keeps artwork intact and places date and unannounced detail
  const positions=await page.evaluate(()=>({poster:document.querySelector('.event-poster-full').getBoundingClientRect().bottom,details:document.querySelector('.event-poster-information').getBoundingClientRect().top}));
  expect(positions.details).toBeGreaterThan(positions.poster);
 });
+
+test('published programme shows nine activities and opens nine-rupee registration',async({page})=>{
+ const programme=require('../../scripts/data/code-sastra-programme.json');
+ const s=await fixture(page,{fee:900});
+ Object.assign(s.events[0],{faqs:programme,banner:'/assets/events/hacktober-2026.webp',max_participants:200,presentation:{poster_format:'portrait',registration_pending:false,capacity_pending:false,schedule_pending:true}});
+ await go(page,'event/'+event.slug);
+ await expect(page.locator('.event-programme article')).toHaveCount(9);
+ await expect(page.locator('.event-programme')).toContainText('highest cumulative score');
+ await expect(page.locator('.event-programme')).toContainText('Blind Coding');
+ await expect(page.locator('.event-poster-facts')).toContainText('₹9');
+ await expect(page.locator('.event-poster-facts')).toContainText('200');
+ await page.getByRole('link',{name:'Register for this event',exact:true}).click();
+ await expect(page.getByRole('heading',{name:/sign in/i})).toBeVisible();
+});
