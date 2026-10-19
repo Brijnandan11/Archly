@@ -4,6 +4,7 @@ export function installEventGalleries(container:HTMLElement,gsap:any,ScrollTrigg
  media.add('(min-width: 1000px) and (min-height: 650px) and (prefers-reduced-motion: no-preference)',()=>{
   const cleanups:Array<()=>void>=[];
   container.querySelectorAll<HTMLElement>('[data-event-gallery]').forEach(gallery=>{
+   if(gallery.classList.contains('gallery-posters'))return;
    const rail=gallery.querySelector<HTMLElement>('.gallery-rail')!,cards=Array.from(gallery.querySelectorAll<HTMLElement>('.gallery-card'));
    if(cards.length<2)return;
    const counter=gallery.querySelector<HTMLElement>('[data-gallery-current]')!,previous=gallery.querySelector<HTMLButtonElement>('[data-gallery-step="-1"]')!,next=gallery.querySelector<HTMLButtonElement>('[data-gallery-step="1"]')!;

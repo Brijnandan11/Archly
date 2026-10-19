@@ -1,3 +1,20 @@
 .event-poster-page{background:#111115;color:#f4f0e8}.event-poster-page>.back-link{display:inline-block;margin-bottom:32px}.event-poster-full{max-width:620px;margin:0 auto 60px}.event-poster-full .event-art{aspect-ratio:2/3;min-height:0!important;height:auto!important;border:1px solid #ffffff18;background:#151515}.event-poster-full .event-art img{object-fit:contain!important;transform:none!important}.event-poster-information{max-width:900px;margin:auto}.event-poster-information h1{font-size:clamp(46px,8vw,94px)}.event-poster-information>.lead{max-width:65ch;color:#c8c5ce}.event-poster-facts{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;margin:38px 0}.event-poster-facts>div{padding:20px 0;border-top:1px solid #ffffff25}.event-poster-facts dt{font-size:11px;color:#aaa5b0;margin-bottom:10px}.event-poster-facts dd{margin:0;font-size:16px;line-height:1.7}.event-poster-contact{border-top:1px solid #ffffff25;padding-top:30px;margin-top:45px}.event-poster-contact h2{font-size:32px}.event-poster-contact a{display:block;width:fit-content;padding:9px 0;font-size:14px;text-decoration:underline;text-underline-offset:5px;overflow-wrap:anywhere}
 .club-app .has-portrait-poster .gallery-card-image{background:#111115}.club-app .has-portrait-poster .gallery-event-photo{object-fit:contain;width:100%;height:100%}.gallery-event-venue{font-size:11px;color:#c6c1cc;line-height:1.6;margin:8px 0 0}
 @media(max-width:650px){.event-poster-full{margin-bottom:36px}.event-poster-facts{grid-template-columns:1fr;gap:0}.event-poster-information h1{font-size:48px}}
+
+/* Match the card to the poster's native ratio instead of letterboxing artwork. */
+.club-app .gallery-posters .gallery-viewport{overflow:visible;margin-top:42px}
+.club-app .gallery-posters .gallery-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(20px,2.4vw,36px);width:100%;max-width:1520px;margin:0 auto;padding:20px 4vw 40px;position:relative;inset:auto;transform:none!important}
+.club-app .gallery-posters .gallery-card{width:100%;max-width:none;min-width:0;flex-basis:auto;margin:0;transform:none!important;opacity:1!important}
+.club-app .gallery-posters .gallery-card-image{display:block;aspect-ratio:2/3!important;max-height:none!important;min-height:0;height:auto;padding:0;background:#111115;border:1px solid #16171426;border-radius:6px;overflow:hidden;transition:transform .3s ease,box-shadow .3s ease}
+.club-app .gallery-posters .gallery-event-photo{display:block;width:100%;height:100%;object-fit:contain;filter:none;transform:none!important}
+.club-app .gallery-posters .gallery-art-motion{transform:none!important;opacity:1!important}
+.club-app .gallery-posters .gallery-card-image:hover{transform:translateY(-3px);box-shadow:0 12px 30px #1111151a}
+.club-app .gallery-posters .gallery-open,.club-app .gallery-posters .gallery-controls,.club-app .gallery-posters .gallery-counter{display:none}
+.club-app .gallery-posters .gallery-hud{justify-content:flex-end}
+.club-app .gallery-posters .gallery-event-venue{color:var(--gallery-muted)}
+.club-app .gallery-posters .gallery-card-info{padding-top:16px;margin-top:16px}
+.event-poster-full .event-art{padding:0;overflow:hidden}
+@media(max-width:1100px){.club-app .gallery-posters .gallery-rail{grid-template-columns:repeat(2,minmax(0,1fr));max-width:900px;gap:40px 28px}}
+@media(max-width:600px){.club-app .gallery-posters .gallery-rail{grid-template-columns:1fr;max-width:440px;padding:12px 22px 32px;gap:38px}.club-app .gallery-posters .gallery-viewport{margin-top:22px}}
+@media(prefers-reduced-motion:reduce){.club-app .gallery-posters .gallery-card-image{transition:none}.club-app .gallery-posters .gallery-card-image:hover{transform:none}}
