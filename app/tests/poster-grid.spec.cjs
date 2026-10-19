@@ -12,11 +12,17 @@ test('poster frames fit while desktop scroll animation and mobile navigation rem
  await page.locator('#club-preloader').waitFor({state:'hidden'});
  await expect(page.locator('.gallery-posters')).toHaveClass(/is-kinetic/);
  await page.evaluate(()=>{window.__ccLenis.scrollTo(document.querySelector('.gallery-posters'),{immediate:true});window.ScrollTrigger.update();});
+ expect(await page.locator('.gallery-posters').evaluate(el=>el.offsetHeight)).toBeGreaterThan(900*4);
  const before=await page.locator('.gallery-posters .gallery-rail').evaluate(el=>getComputedStyle(el).transform);
  await page.getByRole('button',{name:'Next event',exact:true}).click();
  await expect(page.locator('.gallery-posters [data-gallery-current]')).toHaveText('02');
  const after=await page.locator('.gallery-posters .gallery-rail').evaluate(el=>getComputedStyle(el).transform);
  expect(after).not.toBe(before);
+ await page.getByRole('button',{name:'Next event',exact:true}).click();
+ await expect(page.locator('.gallery-posters [data-gallery-current]')).toHaveText('03');
+ await page.getByRole('button',{name:'Next event',exact:true}).click();
+ await expect(page.locator('.gallery-posters [data-gallery-current]')).toHaveText('04');
+ await expect(page.getByRole('button',{name:'Next event',exact:true})).toBeDisabled();
  for(const width of [1440,900,390]){
   await page.setViewportSize({width,height:900});
   const frames=await page.locator('.gallery-posters .gallery-card-image').evaluateAll(nodes=>nodes.map(el=>{const img=el.querySelector('img');return {ratio:el.offsetWidth/el.offsetHeight,width:el.clientWidth,imageWidth:img.clientWidth,imageHeight:img.clientHeight,height:el.clientHeight,loaded:img.complete&&img.naturalWidth>0};}));
