@@ -2,8 +2,9 @@ import {z} from 'zod';
 const text=n=>z.string().trim().max(n);
 export const webUrl=z.union([z.literal(''),z.url().refine(value=>/^https?:\/\//i.test(value),'Use an HTTP or HTTPS URL')]);
 const imageUrl=z.union([webUrl,z.string().regex(/^\/assets\/[a-zA-Z0-9_./-]+$/)]);
-export const eventJsonFields=new Set(['rules','guidelines','objectives','schedule','faqs','photos','winners','highlights']);
+export const eventJsonFields=new Set(['rules','guidelines','objectives','schedule','faqs','photos','winners','highlights','presentation']);
 export const eventExtras={
+ presentation:z.object({end_date:z.iso.date().optional(),poster_format:z.enum(['portrait','landscape']).optional(),organiser:text(200).optional(),website:webUrl.optional(),instagram:webUrl.optional(),email:z.union([z.literal(''),z.email()]).optional(),schedule_pending:z.boolean().optional(),registration_pending:z.boolean().optional(),capacity_pending:z.boolean().optional()}).strict().optional(),
  category:z.enum(['Hackathons','Coding competitions','Workshops','Seminars','Other']).optional(),
  tagline:text(200).optional(),tone:z.enum(['lime','lavender','coral','blue']).optional(),
  eligibility:text(3000).optional(),prizes:text(3000).optional(),contact:text(1000).optional(),

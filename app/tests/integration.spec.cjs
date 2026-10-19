@@ -171,3 +171,23 @@ test('leader creates their own team and allocates two students with names',async
  await expect(page.getByRole('button',{name:'Allocate next participant'})).toBeDisabled();
  await expect(page.locator('.list-item').filter({hasText:'Allocated Student'})).toHaveCount(2);
 });
+
+test('portrait event keeps artwork intact and places date and unannounced details underneath',async({page})=>{
+ const s=await fixture(page);
+ Object.assign(s.events[0],{banner:'/assets/events/bug-bounty-2026.webp',start_time:'00:00:00',end_time:'23:59:00',status:'CLOSED',max_participants:1,presentation:{end_date:'2099-01-03',poster_format:'portrait',organiser:'Coding Club',website:'https://codingclub.live',instagram:'https://www.instagram.com/codingclub_recazm/',email:'codingclub@gecazamgarh.ac.in',schedule_pending:true,registration_pending:true,capacity_pending:true}});
+ await go(page,'events');
+ const card=page.locator('.gallery-card').filter({has:page.getByRole('heading',{name:event.title,exact:true})});
+ await expect(card).toContainText('3 Jan 2099');
+ await expect(card.locator('.gallery-event-detail')).toContainText('To be announced');
+ await expect(card.locator('a[href^="#/register/"]')).toHaveCount(0);
+ expect(await card.locator('.gallery-event-photo').evaluate(el=>getComputedStyle(el).objectFit)).toBe('contain');
+ await card.getByRole('link',{name:'Details',exact:false}).click();
+ await expect(page.locator('.event-poster-information h1')).toHaveText(event.title);
+ await expect(page.locator('.event-poster-facts')).toContainText('1 Jan 2099 – 3 Jan 2099');
+ await expect(page.locator('.event-poster-facts')).not.toContainText('00:00');
+ await expect(page.locator('.event-poster-facts')).not.toContainText('Free');
+ await expect(page.locator('.event-poster-facts').getByText('To be announced',{exact:true})).toHaveCount(3);
+ await expect(page.getByRole('link',{name:'codingclub@gecazamgarh.ac.in'})).toBeVisible();
+ const positions=await page.evaluate(()=>({poster:document.querySelector('.event-poster-full').getBoundingClientRect().bottom,details:document.querySelector('.event-poster-information').getBoundingClientRect().top}));
+ expect(positions.details).toBeGreaterThan(positions.poster);
+});

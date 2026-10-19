@@ -1,0 +1,8 @@
+import {fmt,money} from './model';
+export function eventDates(event:any){
+ const start=event.date||String(event.event_date||'').slice(0,10);
+ const end=event.presentation?.end_date;
+ return end&&end!==start?`${fmt(start)} – ${fmt(end)}`:fmt(start);
+}
+export const eventTime=(event:any)=>event.presentation?.schedule_pending?'To be announced':event.time||event.start_time?.slice(0,5)||'To be announced';
+export const eventPrice=(event:any)=>event.presentation?.registration_pending?'To be announced':money(event.fee??event.registration_fee/100);
