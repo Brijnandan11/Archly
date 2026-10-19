@@ -1,5 +1,5 @@
 import {EventExtras,ProfileExtras,profileExtraKeys,RegistrationStatus,SettingsEditor} from './FeatureEditors';
-import React,{useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {AccountGate,useAuth} from './Auth';
 import {allPages,get,post,patch,remove,session,uploadImage,queryString,request} from './api';
 import {Button,Dialog,Empty,Field,Label,Notice,PageTitle} from './ui';

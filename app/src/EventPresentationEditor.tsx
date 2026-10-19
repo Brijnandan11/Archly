@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {Field} from './ui';
 export default function EventPresentationEditor({event,onChange}:any){
  const details=event.presentation||{};

@@ -1,10 +1,8 @@
-import React,{useEffect,useRef,useState} from 'react';
+import {useEffect,useRef} from 'react';
 import Hero from './Hero';
 import CreatorCredits from './CreatorCredits';
 import AimScene from './AimScene';
-import {Contact,Events,People} from './PublicPages';
-import {Button,Label,SectionHead} from './ui';
-import {activityItems} from './model';
+import {Events,People} from './PublicPages';
 import type {NavigationPosition} from './navigation-position';
 export {chapters} from './navigation';
 export const sectionRoutes:Record<string,string>={'/about':'aim','/events':'events','/faculty':'faculty','/team':'team','/contact':'contact'};

@@ -1,4 +1,4 @@
-import React,{useEffect,useId,useRef,useState} from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import {chapters} from './Journey';
 export default function PageGuide({onNavigate}:{onNavigate:(path:string)=>void}){
  const [active,setActive]=useState('home'),[open,setOpen]=useState(false);

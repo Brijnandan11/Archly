@@ -1,5 +1,6 @@
 export const facultyDirectoryUrl='https://gecazamgarh.ac.in/information-technology-faculty/';
-export const facultyCollege='Rajkiya Engineering College, Azamgarh';
+import {facultyCollege} from './site-defaults';
+export {facultyCollege} from './site-defaults';
 const publishedFaculty=[
  {name:'Dr. Tauseef Ahmad',designation:'Assistant Professor & Head',photo:'tauseef-ahmad.jpg',qualification:'B.Tech (AMU), M.Tech (AMU), Ph.D (AMU)',interests:'Computer Networks, Wireless Ad-Hoc Networks, Image Processing',email:'tauseefahmad@zhcet.ac.in',phone:'8077762035',cv:'/2025/03/Resume_LaTex_new.pdf'},
  {name:'Dr. Ashok Kumar Yadav',designation:'Assistant Professor',photo:'ashok-kumar-yadav.jpg',qualification:'B.Tech (UPTU), M.Tech (JNU), Ph.D pursuing (JNU)',interests:'Computer Networks, Blockchain Technology',email:'ashokyadav88.jnu@gmail.com',phone:'9560219603',cv:'/2024/07/ashok-CV_U-min.pdf'},

@@ -1,4 +1,4 @@
-import React from 'react';
+
 export default function AimScene({store}:any){
  const panels=[
   {label:'THE VISION',title:'Create without fear.',copy:store.settings.vision,tone:'noir'},

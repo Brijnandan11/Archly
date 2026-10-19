@@ -15,8 +15,8 @@ test.beforeEach(async({page})=>{
 });
 test('Ranjana has her supplied photograph and a concise profile matching the other faculty',async({page})=>{
  await page.goto('/#/faculty');
- await expect(page.getByRole('heading',{name:'Ranjana',exact:true})).toBeVisible();
- await expect.poll(()=>page.getByAltText('Ranjana',{exact:true}).evaluate(image=>image.complete&&image.naturalWidth>0)).toBe(true);
+ await expect(page.getByRole('heading',{name:ranjana.name,exact:true})).toBeVisible();
+ await expect.poll(()=>page.getByAltText(ranjana.name,{exact:true}).evaluate(image=>image.complete&&image.naturalWidth>0)).toBe(true);
  await page.getByText('Profile details',{exact:false}).click();
  const details=page.locator('.faculty-profile-body');
  for(const text of ['M.Tech','M.Sc.','B.Tech','C programming','student mentoring'])await expect(details).toContainText(text);
@@ -46,4 +46,19 @@ test('the gallery registration button and old local register route both open MLH
  await page.route(registrationUrl,route=>route.fulfill({contentType:'text/html',body:'<h1>MLH event registration</h1>'}));
  await button.click();await expect(page).toHaveURL(registrationUrl);
  await page.goto('/#/register/hack-id');await expect(page).toHaveURL(registrationUrl);
+});
+
+// Readability matters on the pale faculty header on both desktop and mobile.
+test('faculty introduction has readable contrast on its paper background',async({page})=>{
+ await page.goto('/#/faculty');
+ for(const width of [1280,390]){
+  await page.setViewportSize({width,height:900});
+  const ratio=await page.locator('.faculty-introduction .chapter-header-aside p').evaluate(el=>{
+   const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(Number).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});
+   const luminance=value=>{const [r,g,b]=rgb(value);return r*.2126+g*.7152+b*.0722};
+   const text=luminance(getComputedStyle(el).color),background=luminance(getComputedStyle(el.closest('.chapter-header')).backgroundColor);
+   return (Math.max(text,background)+.05)/(Math.min(text,background)+.05);
+  });
+  expect(ratio).toBeGreaterThanOrEqual(4.5);
+ }
 });

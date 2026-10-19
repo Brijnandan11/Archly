@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {eventView,get} from './api';
 import {EventDetails,Registration} from './PublicPages';
 import {Empty,Notice} from './ui';

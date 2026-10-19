@@ -1,12 +1,12 @@
-import React,{useCallback,useEffect,useState} from 'react';
-import {AccountGate,useAuth} from './Auth';
+import {useCallback,useEffect,useState} from 'react';
+import {AccountGate} from './Auth';
 import {get,post} from './api';
 import {Button,Field,Label,Notice,PageTitle} from './ui';
 import './upi-payment.css';
 
 export default function UPIPayment({registrationId}:any){return <AccountGate><UPIPaymentBody registrationId={registrationId}/></AccountGate>}
 function UPIPaymentBody({registrationId}:any){
- const {user}=useAuth(),[config,setConfig]=useState<any>(null),[data,setData]=useState<any>(null),[file,setFile]=useState<File|null>(null),[preview,setPreview]=useState(''),[utr,setUtr]=useState(''),[ocr,setOcr]=useState<any>(null),[amount,setAmount]=useState('9'),[paidAt,setPaidAt]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+ const [config,setConfig]=useState<any>(null),[data,setData]=useState<any>(null),[file,setFile]=useState<File|null>(null),[preview,setPreview]=useState(''),[utr,setUtr]=useState(''),[ocr,setOcr]=useState<any>(null),[amount,setAmount]=useState('9'),[paidAt,setPaidAt]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
  const refresh=useCallback(async()=>{const [c,s]=await Promise.all([get('/payments/config'),get('/registrations/'+registrationId+'/payment-status')]);setConfig(c);setData(s);if(s.registration?.registration_fee!=null)setAmount((s.registration.registration_fee/100).toFixed(2).replace(/\.00$/,''))},[registrationId]);
  useEffect(()=>{let mounted=true;const tick=()=>refresh().catch((e:any)=>mounted&&setError(e.message));void tick();const timer=setInterval(tick,12000);return()=>{mounted=false;clearInterval(timer)}},[refresh]);
  useEffect(()=>{if(!file){setPreview('');return}const url=URL.createObjectURL(file);setPreview(url);return()=>URL.revokeObjectURL(url)},[file]);

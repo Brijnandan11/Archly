@@ -1,4 +1,4 @@
-import React,{useEffect,useRef} from 'react';
+import {useEffect,useRef} from 'react';
 /** A generative signal surface integrated behind the original hero typography. */
 export default function HeroField(){const ref=useRef<HTMLCanvasElement>(null);useEffect(()=>{
  const canvas=ref.current!,ctx=canvas.getContext('2d');if(!ctx)return;

@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {get,post,patch,queryString} from './api';
 import {Button,Dialog,Empty,Field,Label,Notice} from './ui';
 import {money} from './model';

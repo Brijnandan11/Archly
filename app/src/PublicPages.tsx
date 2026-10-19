@@ -2,13 +2,12 @@ import ResilientImage from './ResilientImage';
 import EventPosterPage from './EventPosterPage';
 import {AccountGate,useAuth} from './Auth';
 import {get,post,registrationView} from './api';
-import {WorkflowSteps} from './WorkspaceChrome';
-import React,{useEffect,useState} from 'react';
+import {useEffect,useState} from 'react';
 import EventShowcase from './EventShowcase';
 import FacultySection from './FacultySection';
 import TeamSection from './TeamSection';
-import {Accordion,ChapterHeader,Button,Empty,EventArt,EventCard,Field,Label,Notice,PageTitle,PersonCard,SectionHead} from './ui';
-import {activityItems,canRegister,categories,fmt,money,participants,receipt,uid} from './model';
+import {Accordion,ChapterHeader,Button,Empty,EventArt,Field,Label,Notice,PageTitle,SectionHead} from './ui';
+import {activityItems,canRegister,fmt,money,receipt} from './model';
 export function About({store}:any){return <><PageTitle label="OUR AIM / OUR PEOPLE" title="Curiosity is" accent="a team sport." copy={store.settings.about}/><section className="section ink"><div className="manifesto word-reveal">{'We are here to learn out loud, build with purpose, and make room for what comes next.'.split(' ').map((w,i)=><span key={i}>{w} </span>)}</div><div className="aim-grid"><article className="reveal"><Label>01 / VISION</Label><h3>A campus full<br/>of possibilities.</h3><p>{store.settings.vision}</p></article><article className="reveal"><Label>02 / MISSION</Label><h3>Learn by doing.<br/>Grow by sharing.</h3><p>{store.settings.mission}</p></article></div></section><section className="section paper"><SectionHead label="WHAT WE STAND FOR" title="Small steps. Real progress."/><div className="objectives">{['Make technical learning practical and accessible.','Build confidence through real projects and challenges.','Connect curious students with mentors and peers.','Encourage ethical, inclusive, collaborative problem solving.'].map((t,i)=><div className="objective reveal" key={t}><span>0{i+1}</span><h3>{t}</h3><span>↗</span></div>)}</div></section><Activities/><section className="section lavender community-section"><span className="parallax-symbol" aria-hidden="true">✺</span><Label>COMMUNITY & COLLABORATION</Label><h2 className="reveal">You don’t need<br/>to know it all.<br/><em>Just start.</em></h2><p>Bring your questions, your unfinished ideas, and your willingness to help someone else. There’s a place for you here.</p><Button href="/events">Find your first event</Button></section></>}
 export function Activities(){return <section className="horizontal-section ink"><div className="section-head padded-head"><div><Label>HOW WE MAKE IT HAPPEN</Label><h2>Less theory.<br/>More <em>“I made this.”</em></h2></div><span className="scroll-note">SCROLL TO EXPLORE →</span></div><div className="horizontal-track">{activityItems.map(([name,title,copy,symbol],i)=><article className={'activity-panel '+['lime','lavender','coral','blue'][i%4]} key={name}><span className="activity-index">0{i+1} / {name.toUpperCase()}</span><span className="activity-symbol">{symbol}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></section>}
 export function Events({store}:any){return <EventShowcase store={store}/>}

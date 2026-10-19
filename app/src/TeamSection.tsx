@@ -1,4 +1,4 @@
-import React,{useMemo} from 'react';
+import {useMemo} from 'react';
 import {TeamRevealGrid} from './components/ui/team-reveal-grid';
 import {ChapterHeader} from './ui';
 import type {Store} from './model';

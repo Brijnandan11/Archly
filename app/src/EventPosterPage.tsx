@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {EventArt,Label,Notice,Button} from './ui';
 import {canRegister} from './model';
 import {eventDates,eventTime,eventPrice,externalRegistrationUrl} from './event-presentation';

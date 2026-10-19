@@ -17,3 +17,6 @@
 .faculty-lead-row>.faculty-circle-card:nth-child(3){grid-column:2 / span 2}
 @media(max-width:700px){.faculty-lead-row{column-gap:25px;row-gap:50px}}
 
+
+/* Faculty introduction sits on paper; keep its copy clearly readable. */
+.club-app .faculty-introduction .chapter-header-aside p{color:#45413c;font-weight:550}

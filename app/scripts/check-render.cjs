@@ -18,7 +18,8 @@ try {
  const home=renderToStaticMarkup(<App/>);
  const events=renderToStaticMarkup(<Events store={initial}/>);
  assert(!home.includes('SAMPLE EVENT'));
- assert(home.includes('Loading club information'));
+ assert(home.includes('id="section-events"'));
+ assert(home.includes('id="section-faculty"'));
  for(const html of [events]){
   assert(html.includes('UPCOMING.'));
   assert(html.includes('PAST.'));
