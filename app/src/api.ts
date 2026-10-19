@@ -1,4 +1,5 @@
 declare const __API_BASE__: string;
+import {backendFetch} from './backend-fetch';
 export const API_BASE = typeof __API_BASE__ === 'string' ? __API_BASE__.replace(/\/$/, '') : '/api';
 export class ApiError extends Error { constructor(public status:number,message:string){super(message)} }
 export const session = {
@@ -11,7 +12,7 @@ export async function request(path:string,{method='GET',body,kind='user',signal,
  if(token)headers.Authorization='Bearer '+token;
  if(body!==undefined&&!(body instanceof FormData))headers['Content-Type']='application/json';
  let response:Response;
- try{response=await fetch(API_BASE+path,{method,headers,body:body===undefined?undefined:body instanceof FormData?body:JSON.stringify(body),signal})}catch(e:any){if(e.name==='AbortError')throw e;throw new ApiError(0,'Cannot reach the backend. Check that the API server is running.')}
+ try{response=await backendFetch(API_BASE+path,{method,headers,body:body===undefined?undefined:body instanceof FormData?body:JSON.stringify(body),signal})}catch(e:any){if(e.name==='AbortError')throw e;throw new ApiError(0,'Connection is taking longer than expected. Please retry in a moment.')}
  const text=await response.text();let data:any;try{data=JSON.parse(text)}catch{data=null}
  if(!response.ok){if(response.status===401){session.clear(kind);if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('cc:session-expired',{detail:kind}))}throw new ApiError(response.status,data?.details?.length?data.details.map((d:any)=>`${d.path}: ${d.message}`).join('; '):data?.error||`Request failed (${response.status}).`)}
  if(raw)return text;
