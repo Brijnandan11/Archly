@@ -15,7 +15,8 @@ All paths below are relative to `/api`. Every frontend action waits for the API 
 | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/logout` | Account creation, sign-in, session restoration, revoked sign-out |
 | `POST /events/:id/register` | Authenticated individual registration |
 | `GET /registrations/me`, `POST /registrations/:id/cancel` | Private registrations and pending cancellation |
-| `POST /payments/order`, `POST /payments/verify` | Razorpay checkout using the server amount, then server verification |
+| `GET /payments/config`, `POST /payments/extract-utr`, `POST /payments/submit` | Coding Club UPI payment details, OCR assistance, and participant payment proof submission |
+| `/admin/payments/upi/*` | Admin-only manual bank verification, approval, rejection, and private QR configuration |
 | `POST /contact` | Public contact form |
 | `POST /leader/login`, `GET /leader/session`, `GET /leader/event`, `POST /leader/logout` | Separate leader credentials and session |
 | `GET /leader/team`, `POST /leader/team/spin` | Current allocation and transactional server selection |
@@ -30,17 +31,16 @@ All paths below are relative to `/api`. Every frontend action waits for the API 
 | `GET/POST /admin/team`, `PATCH/DELETE /admin/team/:id` | Student team CRUD with the same active/inactive behavior |
 | `POST /admin/images/:kind/:id` | Multipart event banner or faculty/student photo upload, maximum 8 MB; `?purpose=gallery` appends an extra event photo |
 | `GET /admin/contact`, `PATCH /admin/contact/:id` | Inbox and message workflow status |
-| `GET /admin/payments`, `POST /admin/payments/:id/refund` | Payment directory and real refund submission with amount/reason confirmation |
 | `GET /admin/notifications`, `POST /admin/notifications/:id/retry` | Latest 100 outbox records and retry of failed notifications |
 | `GET /admin/audit` | Paginated audit history |
 
 `GET /leader/me`, `GET /leader/session/team`, and `POST /leader/session/team/spin` are backend aliases of the canonical leader routes above; the frontend calls one canonical route per action.
 
-`POST /payments/webhook` is a signed gateway-to-server callback. `POST /internal/notifications/process` is a worker-only endpoint protected by a worker secret. These remain server-to-server: their signing secrets must never enter a browser. Notifications can also be processed by `npm run worker` at the repository root.
+`POST /internal/notifications/process` is a worker-only endpoint protected by a worker secret. Its secret must never enter a browser. Notifications can also be processed by `npm run worker` at the repository root.
 
 All six previously missing features now have API and UI support. Faculty/student profiles include biographies, year, qualifications, interests, published contact details, CV, source and portfolio links. Participant profile data stays private to the account and registration administration.
 
-Admin registration changes never rewrite gateway payment status. Cancelling or returning a registration to pending removes its team membership, deactivates associated event-leader access and revokes leader sessions. Restoring a cancelled registration checks event capacity. Paid registrations cannot be marked pending. Refunds remain a separate explicit payment action. Confirming a registration does not automatically reactivate a previously deactivated leader; use the leader control after checking eligibility.
+Admin registration changes never rewrite payment evidence. Cancelling or returning a registration to pending removes its team membership, deactivates associated event-leader access and revokes leader sessions. Restoring a cancelled registration checks event capacity. Verified paid registrations cannot be marked pending. Confirming a registration does not automatically reactivate a previously deactivated leader; use the leader control after checking eligibility.
 
 Password recovery uses the trusted backend `APP_URL` (required HTTPS in production) and the outbox worker. Reset tokens are stored hashed in the reset table; the mail outbox temporarily contains the delivery link and clears that payload after successful sending. Generic request responses do not disclose whether an account exists. The email provider still needs a verified `MAIL_FROM` sender; secrets and sender configuration are server-only.
 

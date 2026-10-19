@@ -14,7 +14,7 @@ export default function EventPosterPage({event}:any){
    <Label>CODE SASTRA / {event.category}</Label><h1>{event.name}</h1>
    <p className="lead">{event.description}</p>
    <dl className="event-poster-facts">{facts.map(([label,value])=><div key={String(label)}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-   {details.registration_pending?<Notice>Registration details will be announced soon.</Notice>:canRegister(event)?<Button href={'/register/'+event.id}>Register for this event</Button>:<Notice>Registration is currently closed.</Notice>}
+   {details.registration_parent_slug?<><Notice>This event is included in Code Sastra. Register once for the programme.</Notice><Button href={'/event/'+details.registration_parent_slug}>Register for Code Sastra</Button></>:details.registration_pending?<Notice>Registration details will be announced soon.</Notice>:canRegister(event)?<Button href={'/register/'+event.id}>Register for this event</Button>:<Notice>Registration is currently closed.</Notice>}
    {event.faqs?.length>0&&<section className="event-programme" aria-labelledby="event-programme-heading">
     <h2 id="event-programme-heading">{event.slug==='code-sastra-2026'?'The Code Sastra programme':'Event details'}</h2>
     {event.faqs.map((item:any,index:number)=><article key={item.q}><span className="event-programme-number">{String(index+1).padStart(2,'0')}</span><div><h3>{item.q}</h3><p>{item.a}</p></div></article>)}

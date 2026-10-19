@@ -4,27 +4,13 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 
-// Real HTTP + PostgreSQL. Only gateway calls are simulated; no charges or mail are sent.
-process.env.RAZORPAY_KEY_ID='rzp_test_integration';
-process.env.RAZORPAY_KEY_SECRET=crypto.randomBytes(32).toString('hex');
-process.env.RAZORPAY_WEBHOOK_SECRET=crypto.randomBytes(32).toString('hex');
+// Real HTTP + PostgreSQL; no payment provider calls or email are sent.
 const {default:app}=await import('../../src/app.js');
 const {pool,query}=await import('../../src/db.js');
-const {assertConfig,config}=await import('../../src/config.js');
+const {assertConfig}=await import('../../src/config.js');
 const realFetch=globalThis.fetch;
-const orders=new Map(),captures=new Map();
-let orderCalls=0;
 globalThis.fetch=async(input,init)=>{
  const url=String(input);
- if(url==='https://api.razorpay.com/v1/orders'){
-  orderCalls++;const body=JSON.parse(init.body);const order={...body,id:'order_'+crypto.randomUUID()};orders.set(order.id,order);
-  return Response.json(order);
- }
- if(url.startsWith('https://api.razorpay.com/v1/payments/')){
-  const id=url.split('/')[5];
-  if(url.endsWith('/refund'))return Response.json({id:'rfnd_'+crypto.randomUUID(),status:'processed'});
-  return captures.has(id)?Response.json(captures.get(id)):Response.json({}, {status:404});
- }
  if(url==='https://api.resend.com/emails')throw Error('Integration suite must never send email');
  return realFetch(input,init);
 };
@@ -32,8 +18,8 @@ globalThis.fetch=async(input,init)=>{
 test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
  assertConfig();await query('SELECT 1');
  const marker='integration-'+crypto.randomUUID();
- const users=[],events=[],content=[],uploads=[],webhooks=[];
- let server,base,admin,participant,other,leader,team,team2,reg,paidReg,payment;
+ const users=[],events=[],content=[],uploads=[];
+ let server,base,admin,participant,other,leader,team,team2,reg;
  const password='Integration-test-password-2026!';
  async function request(method,path,body,token,expected=200){
   const headers={};if(token)headers.Authorization='Bearer '+token;
@@ -51,16 +37,13 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
   const data=await request('POST','/api/admin/events',{title:'Integration '+label,slug:marker+'-'+label,event_date:'2099-01-01',start_time:'10:00',end_time:'12:00',venue:'Test venue',registration_fee:0,team_size:2,max_participants:10,registration_start:'2020-01-01T00:00:00Z',registration_deadline:'2098-12-31T00:00:00Z',status:'OPEN',...overrides},admin.token,201);
   events.push(data.id);return data;
  }
- async function webhook(type,entity,id=marker+'-'+crypto.randomUUID()){
-  webhooks.push(id);const body=JSON.stringify({event:type,payload:entity});
-  return fetch(base+'/api/payments/webhook',{method:'POST',headers:{'Content-Type':'application/json','x-razorpay-event-id':id,'x-razorpay-signature':crypto.createHmac('sha256',config.razorpay.webhook).update(body).digest('hex')},body});
- }
  try{
   server=app.listen(0,'127.0.0.1');await new Promise((resolve,reject)=>{server.once('listening',resolve);server.once('error',reject);});base=`http://127.0.0.1:${server.address().port}`;
   await t.test('health, public lists, missing routes and auth guards',async()=>{
    assert.deepEqual(await request('GET','/api/health'),{status:'ok',database:'connected'});
    for(const path of ['/api/events','/api/faculty','/api/team'])assert.ok(Array.isArray(await request('GET',path)));
-   for(const path of ['/api/auth/me','/api/admin/events','/api/admin/leaders','/api/admin/payments','/api/admin/dashboard','/api/registrations/me','/api/leader/session'])await request('GET',path,undefined,null,401);
+   for(const path of ['/api/auth/me','/api/admin/events','/api/admin/leaders','/api/admin/dashboard','/api/registrations/me','/api/leader/session'])await request('GET',path,undefined,null,401);
+   for(const path of ['/api/payments/order','/api/payments/verify','/api/payments/webhook','/api/admin/payments'])await request('GET',path,undefined,null,404);
    await request('GET','/missing',undefined,null,404);
   });
   await t.test('private schema has RLS and no public API role access',async()=>{
@@ -144,45 +127,6 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
    const roster=await request('GET','/api/leader/team',undefined,login.token);
    assert.equal(roster.total_members,3);assert.equal(roster.members.length,2);assert.ok(roster.leader_name);
   });
-  await t.test('paid order creation, repeat idempotency and verified capture (simulated gateway)',async()=>{
-   const ev=await event('paid',{registration_fee:25000});
-   paidReg=await request('POST',`/api/events/${ev.id}/register`,undefined,participant.token,201);assert.equal(paidReg.status,'PENDING');
-   const order=await request('POST','/api/payments/order',{registration_id:paidReg.id},participant.token,201);
-   assert.equal(order.amount,25000);
-   const again=await request('POST','/api/payments/order',{registration_id:paidReg.id},participant.token);assert.equal(again.order_id,order.order_id);assert.equal(orderCalls,1);
-   const paymentId='pay_'+crypto.randomUUID();captures.set(paymentId,{status:'captured',order_id:order.order_id,amount:order.amount,currency:'INR'});
-   const body={registration_id:paidReg.id,razorpay_order_id:order.order_id,razorpay_payment_id:paymentId,razorpay_signature:crypto.createHmac('sha256',config.razorpay.secret).update(order.order_id+'|'+paymentId).digest('hex')};
-   await request('POST','/api/payments/verify',body,other.token,404);
-   assert.equal((await request('POST','/api/payments/verify',body,participant.token)).status,'PAID');
-   assert.equal((await query('SELECT status FROM club.registrations WHERE id=$1',[paidReg.id])).rows[0].status,'CONFIRMED');
-   payment=(await query('SELECT * FROM club.payments WHERE registration_id=$1',[paidReg.id])).rows[0];
-  });
-  await t.test('signed capture webhook, replay deduplication and bad signature rejection',async()=>{
-   const ev=await event('webhook',{registration_fee:100});const r=await request('POST',`/api/events/${ev.id}/register`,undefined,other.token,201);
-   const order=await request('POST','/api/payments/order',{registration_id:r.id},other.token,201);
-   const entity={payment:{entity:{order_id:order.order_id,id:'pay_'+crypto.randomUUID(),amount:100,currency:'INR'}}};
-   assert.equal((await webhook('payment.captured',{payment:{entity:{...entity.payment.entity,amount:99}}})).status,200);
-   assert.equal((await query('SELECT status FROM club.registrations WHERE id=$1',[r.id])).rows[0].status,'PENDING');
-   const id=marker+'-capture';assert.equal((await webhook('payment.captured',entity,id)).status,200);assert.equal((await webhook('payment.captured',entity,id)).status,200);
-   assert.equal((await query('SELECT status FROM club.registrations WHERE id=$1',[r.id])).rows[0].status,'CONFIRMED');
-   await request('POST','/api/payments/webhook',{},null,401);
-  });
-  await t.test('concurrent payment order requests create one gateway order',async()=>{
-   const ev=await event('order-race',{registration_fee:100});const r=await request('POST',`/api/events/${ev.id}/register`,undefined,other.token,201);
-   const before=orderCalls;
-   const responses=await Promise.all([1,2].map(()=>fetch(base+'/api/payments/order',{method:'POST',headers:{Authorization:'Bearer '+other.token,'Content-Type':'application/json'},body:JSON.stringify({registration_id:r.id})})));
-   const data=await Promise.all(responses.map(x=>x.json()));
-   assert.equal(data[0].order_id,data[1].order_id);assert.equal(orderCalls-before,1);
-  });
-  await t.test('paid cancellation and registration ownership',async()=>{
-   const ev=await event('cancel',{registration_fee:100});const r=await request('POST',`/api/events/${ev.id}/register`,undefined,participant.token,201);
-   await request('POST',`/api/registrations/${r.id}/cancel`,undefined,other.token,409);
-   assert.equal((await request('POST',`/api/registrations/${r.id}/cancel`,undefined,participant.token)).status,'CANCELLED');
-  });
-  await t.test('refund updates payment after full processed refund (simulated gateway)',async()=>{
-   await request('POST',`/api/admin/payments/${payment.id}/refund`,{amount:payment.amount,reason:'Integration refund'},admin.token,202);
-   assert.equal((await query('SELECT status FROM club.payments WHERE id=$1',[payment.id])).rows[0].status,'REFUNDED');
-  });
   await t.test('faculty and student team content CRUD',async()=>{
    for(const kind of ['faculty','team']){
     const row=await request('POST','/api/admin/'+kind,{name:marker+' '+kind},admin.token,201);content.push({kind,id:row.id});
@@ -204,9 +148,7 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
    const managedLeaders=await request('GET','/api/admin/leaders?event_id='+leader.event_id,undefined,admin.token);
    assert.ok(managedLeaders.some(l=>l.id===leader.id));
    assert.ok(managedLeaders.every(l=>!('credential_hash' in l)&&!('one_time_password' in l)));
-   const managedPayments=await request('GET','/api/admin/payments?limit=100',undefined,admin.token);
-   assert.ok(managedPayments.some(p=>p.registration_id===paidReg.id));
-   for(const path of ['/api/admin/events','/api/admin/leaders','/api/admin/payments'])await request('GET',path,undefined,participant.token,403);
+   for(const path of ['/api/admin/events','/api/admin/leaders','/api/admin/payments/upi'])await request('GET',path,undefined,participant.token,403);
    assert.ok(Number((await query('SELECT count(*) FROM club.notification_outbox WHERE recipient=$1',[participant.email])).rows[0].count)>0);
    await request('POST','/api/internal/notifications/process',{},null,401);
   });
@@ -233,8 +175,6 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
   await query('DELETE FROM club.team_members WHERE event_id=ANY($1::uuid[])',[events]);
   await query('DELETE FROM club.teams WHERE event_id=ANY($1::uuid[])',[events]);
   await query('DELETE FROM club.event_leaders WHERE event_id=ANY($1::uuid[])',[events]);
-  await query('DELETE FROM club.payment_refunds WHERE payment_id IN (SELECT p.id FROM club.payments p JOIN club.registrations r ON r.id=p.registration_id WHERE r.event_id=ANY($1::uuid[]))',[events]);
-  await query('DELETE FROM club.payments WHERE registration_id IN (SELECT id FROM club.registrations WHERE event_id=ANY($1::uuid[]))',[events]);
   await query('DELETE FROM club.registrations WHERE event_id=ANY($1::uuid[])',[events]);
   await query('DELETE FROM club.events WHERE id=ANY($1::uuid[])',[events]);
   await query('DELETE FROM club.audit_logs WHERE actor_id=ANY($1::uuid[])',[users]);
@@ -242,7 +182,6 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
   await query('DELETE FROM club.contact_messages WHERE subject=$1',[marker]);
   for(const row of content)await query(`DELETE FROM club.${row.kind==='faculty'?'faculty':'student_team'} WHERE id=$1`,[row.id]);
   await query('DELETE FROM club.users WHERE id=ANY($1::uuid[])',[users]);
-  await query('DELETE FROM club.webhook_events WHERE event_id=ANY($1::text[])',[webhooks]);
   globalThis.fetch=realFetch;await pool.end();
  }
 });

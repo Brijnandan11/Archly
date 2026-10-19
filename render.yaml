@@ -14,9 +14,7 @@ services:
         sync: false
       - key: APP_URL
         sync: false
-      - key: RAZORPAY_KEY_ID
-        sync: false
-      - key: RAZORPAY_KEY_SECRET
+      - key: UPI_VPA
         sync: false
       - key: RESEND_API_KEY
         sync: false
@@ -51,8 +49,6 @@ envVarGroups:
       - key: SUPABASE_URL
         value: https://wfmzhrjdjbkuezsmewjk.supabase.co
       - key: JWT_SECRET
-        generateValue: true
-      - key: RAZORPAY_WEBHOOK_SECRET
         generateValue: true
       - key: WORKER_SECRET
         generateValue: true

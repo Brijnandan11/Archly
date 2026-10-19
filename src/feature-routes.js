@@ -10,6 +10,7 @@ import {generateLeaderPassword} from './leader-password.js';
 import {participantUpdate,settingsSchema} from './feature-schemas.js';
 const r=Router(),admin=[auth,role('ADMIN')];
 const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+const manualPaymentsInstalled=async c=>(await c.query("SELECT to_regclass('club.manual_payment_submissions') IS NOT NULL AS enabled")).rows[0].enabled;
 const password=z.string().min(10).max(128);
 const recoveryLimit=rateLimit({windowMs:15*60_000,limit:15,standardHeaders:'draft-7',legacyHeaders:false});
 const emailLimit=rateLimit({windowMs:15*60_000,limit:3,keyGenerator:req=>digest(req.body.email),standardHeaders:'draft-7',legacyHeaders:false});
@@ -49,14 +50,18 @@ r.patch('/admin/leaders/:id',...admin,validate(z.object({is_active:z.boolean()})
 r.patch('/admin/registrations/:id',...admin,validate(z.object({status:z.enum(['PENDING','CONFIRMED','CANCELLED']),reason:z.string().trim().min(3).max(300)}).strict()),handler(async(req,res)=>{
  const result=await tx(async c=>{
   const reference=(await c.query('SELECT event_id,user_id FROM club.registrations WHERE id=$1',[req.params.id])).rows[0];if(!reference)fail(404,'Registration not found');
-  const event=(await c.query('SELECT id,max_participants,status FROM club.events WHERE id=$1 FOR UPDATE',[reference.event_id])).rows[0];
+  const event=(await c.query('SELECT id,max_participants,status,registration_fee FROM club.events WHERE id=$1 FOR UPDATE',[reference.event_id])).rows[0];
   const leaders=await c.query('SELECT id FROM club.event_leaders WHERE event_id=$1 AND user_id=$2 ORDER BY id FOR UPDATE',[reference.event_id,reference.user_id]);
   await c.query('SELECT id FROM club.teams WHERE leader_id=ANY($1::uuid[]) OR id IN (SELECT team_id FROM club.team_members WHERE registration_id=$2) ORDER BY id FOR UPDATE',[leaders.rows.map(l=>l.id),req.params.id]);
   const reg=(await c.query('SELECT * FROM club.registrations WHERE id=$1 FOR UPDATE',[req.params.id])).rows[0];
   if(reg.status===req.body.status)return reg;
+  if(req.body.status==='CONFIRMED'&&Number(event.registration_fee)>0)fail(409,'Use Payment Verification after checking the credited bank transaction');
+  const hasManualPayments=await manualPaymentsInstalled(c);
+  if(req.body.status==='CONFIRMED'&&['PENDING_PAYMENT','PENDING_VERIFICATION','PAYMENT_REJECTED'].includes(reg.status))fail(409,'Use Payment Verification after checking the credited bank transaction');
+  if(req.body.status==='CONFIRMED'&&((hasManualPayments&&(await c.query("SELECT id FROM club.manual_payment_submissions WHERE registration_id=$1 AND status<>'REJECTED' LIMIT 1",[reg.id])).rowCount)||(await c.query("SELECT id FROM club.payments WHERE registration_id=$1 AND status='PAID' LIMIT 1",[reg.id])).rowCount))fail(409,'Use Payment Verification after checking the credited bank transaction');
   if(req.body.status!=='CANCELLED'&&['CANCELLED','ARCHIVED'].includes(event.status))fail(409,'Cannot restore a registration for a cancelled or archived event');
   if(reg.status==='CANCELLED'&&req.body.status!=='CANCELLED'){const count=Number((await c.query("SELECT count(*) n FROM club.registrations WHERE event_id=$1 AND status!='CANCELLED'",[event.id])).rows[0].n);if(count>=event.max_participants)fail(409,'Event full')}
-  if(req.body.status==='PENDING'){const paid=await c.query("SELECT id FROM club.payments WHERE registration_id=$1 AND status='PAID'",[reg.id]);if(paid.rowCount)fail(409,'A paid registration cannot be marked pending')}
+  if(req.body.status==='PENDING'){const manualPaid=hasManualPayments&&(await c.query("SELECT id FROM club.manual_payment_submissions WHERE registration_id=$1 AND status='APPROVED' LIMIT 1",[reg.id])).rowCount,legacyPaid=(await c.query("SELECT id FROM club.payments WHERE registration_id=$1 AND status='PAID' LIMIT 1",[reg.id])).rowCount;if(manualPaid||legacyPaid)fail(409,'A verified payment cannot be marked pending')}
   if(req.body.status!=='CONFIRMED'){
    await c.query('DELETE FROM club.team_members WHERE registration_id=$1',[reg.id]);
    await c.query('UPDATE club.event_leaders SET is_active=false WHERE id=ANY($1::uuid[])',[leaders.rows.map(l=>l.id)]);

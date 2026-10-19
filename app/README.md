@@ -37,15 +37,13 @@ Sessions are stored in sessionStorage for the current tab; passwords and leader 
 - **My account:** edit participant details, roll number, branch, biography and social links.
 - **Forgot your password:** request a single-use link expiring after 30 minutes. Set backend `APP_URL` to the public frontend URL; production requires HTTPS. Configure verified `MAIL_FROM` and run `npm run worker` for actual email delivery.
 - **Admin → Leaders:** reset passwords, deactivate/reactivate access and revoke prior leader sessions.
-- **Admin → Registrations:** change status with a reason. Capacity and eligibility are enforced; payment status and refunds remain separate.
+- **Admin → Registrations:** change status with a reason. Capacity and eligibility are enforced; payment evidence is handled in Payment Verification.
 
 The hosted project has both additive migrations applied: `../supabase/migrations/20261018192757_complete_club_features.sql` and `../supabase/migrations/20261018203006_preserve_legacy_profile_fields.sql`. Existing event records are preserved. The source club settings, faculty, and committee profiles have been seeded into the database; `npm run legacy:seed` at the repository root can safely fill or refresh those records from `app/src/data.ts`. Profile photo URLs refer to images shipped in `app/public/assets/`.
 
-## Razorpay test mode and webhooks
+## UPI registration payments
 
-The local `.env` has a working Razorpay test key pair. `npm run dev:api` serves the order and webhook routes on port 4000; the frontend at port 5173 calls `/api/payments/order`, launches Standard Checkout, and verifies a returned payment through `/api/payments/verify`. Keep the test key (`rzp_test_…`) in use until a real test checkout succeeds; test payments do not move real money.
-
-`RAZORPAY_WEBHOOK_SECRET` is generated locally and stored in `.env`. To receive real test webhooks, create a webhook in the Razorpay Dashboard’s **Test Mode** with URL `https://<public-api-host>/api/payments/webhook`, use the exact secret from `.env`, and subscribe to `payment.captured`, `payment.failed`, and `refund.processed`. Razorpay cannot deliver to `localhost`; local delivery needs a public tunnel. The endpoint validates the HMAC against the raw request body and ignores duplicate event IDs. Razorpay documents that webhooks require a public URL and recommends HTTPS ([webhook setup](https://razorpay.com/docs/payments/dashboard/settings/webhooks/), [signature validation and localhost testing](https://razorpay.com/docs/webhooks/validate-test/)).
+Paid registrations use the Coding Club UPI QR or a prefilled UPI app link. The registration remains pending until an administrator checks the receiving account and approves the payment in Admin → Payment Verification. Screenshots and OCR are supporting evidence only; they do not confirm payment. Configure `UPI_VPA` and the private storage credentials in the backend environment. The supplied QR encodes ₹9, so a different event fee uses the dynamic UPI app link.
 
 ## Build and host
 
@@ -64,7 +62,7 @@ API_BASE_URL=https://your-api.example/api npm run build
 
 Allow the frontend origin in the backend's `CORS_ORIGINS` when using a separate API origin. Never place backend secrets in frontend configuration.
 
-Payments require the backend Razorpay configuration and checkout access. Amounts are displayed in rupees and sent to the backend in paise. Checkout results are verified by the API before confirmation. Closing checkout leaves a pending registration that can be paid or cancelled from My registrations. A registration confirmation download is not a tax invoice.
+Paid registrations use the configured UPI destination. A participant uploads payment proof and waits for manual bank verification; an administrator approval confirms registration. A registration confirmation download is not a tax invoice.
 
 Image uploads require the backend storage configuration. Email notifications are queued by the API and delivered by the backend worker. The UI displays actual API failures if these services are unavailable.
 

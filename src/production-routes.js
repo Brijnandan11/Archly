@@ -2,7 +2,6 @@ import {Router} from 'express';
 import {z} from 'zod';
 import {auth,role,handler,validate,fail,audit} from './utils.js';
 import {query,tx} from './db.js';
-import {config} from './config.js';
 import {deliverNotifications} from './notifications.js';
 import {memberCapacity} from './team-capacity.js';
 const r=Router(), uuid=z.string().uuid(), admin=[auth,role('ADMIN')];
@@ -23,14 +22,5 @@ r.post('/admin/teams/:id/move',...admin,validate(z.object({registration_id:uuid,
   const moved=await c.query('UPDATE club.team_members SET team_id=$1 WHERE team_id=$2 AND registration_id=$3 RETURNING *',[dest.id,origin.id,registration_id]);if(!moved.rowCount)fail(404,'Team member not found');
   await audit(c,req.user.id,'ADMIN_MOVED_TEAM_MEMBER',dest.id,{from:origin.id,registration_id});return moved.rows[0];
  });res.json(result);
-}));
-r.post('/admin/payments/:id/refund',...admin,validate(z.object({amount:z.number().int().positive(),reason:z.string().min(3).max(200)}).strict()),handler(async(req,res)=>{
- if(!config.razorpay.key||!config.razorpay.secret)fail(503,'Payment gateway not configured');
- const payment=await tx(async c=>{const q=await c.query('SELECT * FROM club.payments WHERE id=$1 FOR UPDATE',[req.params.id]);const p=q.rows[0];if(!p||p.status!=='PAID'||!p.gateway_payment_id)fail(409,'Payment not refundable');
- const sum=await c.query("SELECT coalesce(sum(amount),0)::int AS amount FROM club.payment_refunds WHERE payment_id=$1 AND status IN ('PROCESSING','PROCESSED')",[p.id]);if(req.body.amount>p.amount-sum.rows[0].amount)fail(409,'Refund exceeds available amount');
- const rf=(await c.query('INSERT INTO club.payment_refunds(payment_id,amount) VALUES($1,$2) RETURNING id',[p.id,req.body.amount])).rows[0];await audit(c,req.user.id,'ADMIN_REFUND_REQUESTED',p.id,{refund_id:rf.id,amount:req.body.amount});return {...p,refund_id:rf.id};});
- const authHeader='Basic '+Buffer.from(config.razorpay.key+':'+config.razorpay.secret).toString('base64');
- try{const result=await fetch('https://api.razorpay.com/v1/payments/'+encodeURIComponent(payment.gateway_payment_id)+'/refund',{method:'POST',headers:{Authorization:authHeader,'Content-Type':'application/json','X-Razorpay-Idempotency-Key':payment.refund_id},body:JSON.stringify({amount:req.body.amount,notes:{reason:req.body.reason}})});if(!result.ok)throw Error('Gateway returned '+result.status);const rf=await result.json();await tx(async c=>{await c.query("SELECT id FROM club.payments WHERE id=$1 FOR UPDATE",[payment.id]);await c.query("UPDATE club.payment_refunds SET gateway_refund_id=$1,status=CASE WHEN $2='processed' THEN 'PROCESSED' ELSE 'PROCESSING' END,processed_at=CASE WHEN $2='processed' THEN now() ELSE NULL END WHERE id=$3",[rf.id,rf.status,payment.refund_id]);await c.query("UPDATE club.payments p SET status='REFUNDED' WHERE p.id=$1 AND p.amount<=(SELECT COALESCE(SUM(amount),0) FROM club.payment_refunds WHERE payment_id=p.id AND status='PROCESSED')",[payment.id]);});res.status(202).json({refund_id:rf.id,status:rf.status});}
- catch(e){fail(502,'Refund outcome unknown; reconcile with gateway before retrying');}
 }));
 export default r;

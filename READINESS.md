@@ -19,8 +19,8 @@ The integration suite uses real HTTP requests, real PostgreSQL and real Supabase
 | Events | Create, edit, published details, hidden drafts, invalid edits |
 | Registrations | Free confirmation, paid pending, duplicate prevention, owner lists, admin filters/CSV, pending cancellation |
 | Leaders/teams | Selection, credential login, persistent sessions, team reads, locks, member add/remove/move, leader update, logout |
-| Concurrency | Two spins cannot claim one participant twice; event capacity cannot be exceeded; simultaneous order requests reuse one order |
-| Payments, simulated provider | Order creation/reuse, signed verification, ownership, captured webhook, replay deduplication, amount mismatch, processed refund |
+| Concurrency | Two spins cannot claim one participant twice; event capacity cannot be exceeded |
+| Payments | Manual UPI screenshot/OCR submission and admin bank-verification workflows are covered by the dedicated opt-in UPI integration suite |
 | Content/contact/admin | Faculty and student team CRUD, inbox/status, dashboards, audit and queued notifications |
 | Images, real storage | Multipart PNG upload, WebP re-encoding, database URL update, public download and test object removal |
 | Error responses | Malformed JSON, invalid IDs and invalid pagination return HTTP 400 |
@@ -29,8 +29,6 @@ The integration suite uses real HTTP requests, real PostgreSQL and real Supabase
 ## Fixed during verification
 
 - Event PATCH applied creation defaults and silently changed OPEN events to DRAFT; edits now preserve unspecified fields.
-- Immediate full refunds left payment status PAID; processed totals now update it to REFUNDED.
-- Concurrent payment-order requests created separate orders; registration row locking now serializes creation/reuse.
 - Malformed JSON returned HTTP 500; parser errors now return HTTP 400 and oversized JSON returns HTTP 413.
 - Fractional/infinite pagination could reach SQL and fail; pagination now requires valid integers.
 - Dashboard opened five database connections in parallel; it now uses one transaction connection.
@@ -39,8 +37,8 @@ The integration suite uses real HTTP requests, real PostgreSQL and real Supabase
 
 ## External configuration still incomplete
 
-- Razorpay credentials passed a real read-only API check (HTTP 200) and are TEST-mode credentials. Real checkout capture/refund and callback delivery were not performed; payment integration tests simulate the provider.
-- `RAZORPAY_WEBHOOK_SECRET` is absent. Configure the same webhook secret on the backend and Razorpay before expecting callbacks to work.
+- The active checkout uses the Coding Club UPI QR and manual bank verification; no payment-provider checkout, webhook, or automatic approval is used.
+- The UPI schema migration `sql/004_manual_upi_verification.sql` is included but has not been applied to the hosted database. Apply it to the intended database before accepting paid registrations.
 - Resend rejected the configured API key with HTTP 401. Replace it with a valid sending key; `MAIL_FROM` is also absent and must identify an approved sender. Real email delivery is not working.
 - `WORKER_SECRET` is absent, so the internal HTTP notification-processing endpoint remains unauthorized. CLI workers also need valid email settings.
 - Production preflight fails for those missing settings and the current development NODE_ENV. Production deployment, load testing and real provider acceptance remain outstanding.
