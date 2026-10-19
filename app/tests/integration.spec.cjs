@@ -243,3 +243,41 @@ test('shared actions stay readable, keyboard accessible and usable on mobile',as
  expect(await send.evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
  await page.screenshot({path:'/tmp/codingclub-contact-buttons-mobile.png',fullPage:true});
 });
+
+async function expectSeparatedActions(page,selector){
+ const groups=await page.locator(selector).evaluateAll(nodes=>nodes.map(group=>Array.from(group.querySelectorAll(':scope > button,:scope > a')).filter(el=>el.getBoundingClientRect().width>0).map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}})));
+ expect(groups.length).toBeGreaterThan(0);
+ for(const boxes of groups)for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
+  const a=boxes[i],b=boxes[j];expect(a.right+7<=b.left||b.right+7<=a.left||a.bottom+7<=b.top||b.bottom+7<=a.top).toBe(true);
+ }
+}
+test('sign-in and recovery action groups never overlap at phone, tablet or desktop widths',async({page})=>{
+ await fixture(page);
+ await go(page,'account');
+ for(const width of [320,390,768,1280]){
+  await page.setViewportSize({width,height:900});
+  await expectSeparatedActions(page,'.auth-actions');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ }
+ await page.setViewportSize({width:390,height:844});
+ await page.screenshot({path:'/tmp/codingclub-signin-spacing.png',fullPage:true});
+ await page.getByRole('link',{name:'Forgot your password?'}).click();
+ for(const width of [320,390,768,1280]){
+  await page.setViewportSize({width,height:900});
+  await expectSeparatedActions(page,'.action-group');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  expect(await page.locator('.floating-link').evaluate(el=>getComputedStyle(el).position)).toBe('static');
+ }
+ await page.setViewportSize({width:390,height:844});
+ await page.screenshot({path:'/tmp/codingclub-recovery-spacing.png',fullPage:true});
+ await page.getByRole('link',{name:'Back to sign in'}).click();
+ await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+});
+test('admin action groups wrap with gaps in cards and table rows',async({page})=>{
+ await fixture(page,{admin:true,logged:true});await go(page,'admin');
+ for(const tab of ['Events','Leaders']){
+  await page.getByRole('navigation',{name:'Admin workspace'}).getByRole('button',{name:tab,exact:true}).click();
+  await expect(page.locator('.action-group').first()).toBeVisible();
+  for(const width of [390,768,1280]){await page.setViewportSize({width,height:900});await expectSeparatedActions(page,'.action-group')}
+ }
+});

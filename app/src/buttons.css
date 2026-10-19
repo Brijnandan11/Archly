@@ -66,3 +66,27 @@
  .club-app :is(.btn,.primary-cta,.gallery-card-actions>a,.gallery-skip,.archive-recap,.archive-next,.btn-arrow,.filter-row button,.admin-nav nav button,.menu-button,.sound-button){transition:none;transform:none!important}
 }
 @media(forced-colors:active){.club-app :is(.btn,button,.primary-cta,.gallery-card-actions>a){border:1px solid ButtonText;box-shadow:none}.club-app :is(button,a):focus-visible{outline:2px solid Highlight}}
+
+/* Action layout owns spacing: inline margins cannot safely space wrapped rows. */
+.club-app .action-group,.club-app .upi-review-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-block:20px 8px;min-width:0}
+.club-app .action-group>:is(.btn,.text-link),.club-app .upi-review-actions>.btn{margin:0;max-width:100%}
+.club-app .action-group>.btn .btn-label,.club-app .upi-review-actions .btn-label{white-space:normal;overflow-wrap:anywhere}
+.club-app .action-group>form,.club-app .upi-review-actions>.field{flex:1 0 100%;min-width:0}
+.club-app .auth-actions{flex-direction:column;align-items:stretch;max-width:100%}
+.club-app .auth-actions>:is(.btn,.text-link){display:flex;align-items:center;min-height:48px;justify-content:space-between;padding:12px 16px;border-radius:8px;white-space:normal;text-align:left}
+.club-app .auth-actions>a.text-link{border:1px solid #57535f;background:transparent;color:#f2eee7;text-decoration:underline;text-underline-offset:4px;font-size:13px}
+.club-app .workspace-route .admin-event-grid .action-group>.btn,.club-app .workspace-route .table-actions>.btn{margin:0}
+.club-app .workspace-route .admin-event-grid .action-group{margin-bottom:20px}
+.club-app .workspace-route .list-item{flex-wrap:wrap;gap:12px}
+.club-app .workspace-route .list-item>div:first-child{min-width:0;flex:1 1 180px}
+.club-app .demo-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 16px}
+.club-app .demo-banner>span{margin:0}
+.club-app .form-card>form+form,.club-app .form-card>.btn+form{margin-top:24px}
+/* A fixed quick link must never sit over an input or submit button. */
+.club-app:has(main .form-card)>.floating-link{position:static;margin:20px 22px;float:none;width:fit-content}
+@media(max-width:600px){
+ .club-app .action-group{align-items:stretch}
+ .club-app .action-group>.btn{flex:1 1 100%;width:100%}
+ .club-app .table-actions>.btn{flex:1 1 auto;width:auto}
+ .club-app .upi-review-actions>.btn{flex:1 1 100%;width:100%}
+}
