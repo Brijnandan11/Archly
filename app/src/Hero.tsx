@@ -793,7 +793,7 @@ export default function RosterReveal({onNavigate}: {onNavigate?: (path:string)=>
         <div className="discipline-strip" aria-label="Coding club interests"><div className="marquee-track">{[0,1].map(copy=><div className="marquee-group" key={copy} aria-hidden={copy===1}>{CATEGORIES.map(category=><span className="marquee-item" key={category}>{category}<b aria-hidden="true">✳</b></span>)}</div>)}</div></div>
       </div>
       <footer className="hero-footer"><span>THINK BIG. START WITH ONE LINE.</span><span className="footer-code">&lt; / &gt; &nbsp; BUILT ON CURIOSITY</span></footer>
-      <dialog id="club-menu" className="club-stack-menu" data-lenis-prevent ref={menuRef} aria-label="Explore Coding Club" onCancel={()=>setMenuOpen(false)} onClose={()=>{setMenuOpen(false);menuButton.current?.focus()}}>
+      <dialog id="club-menu" className="club-stack-menu" data-lenis-prevent ref={menuRef} aria-label="Explore Coding Club" onCancel={()=>setMenuOpen(false)} onClose={()=>{setMenuOpen(false);menuButton.current?.focus({preventScroll:true})}}>
         {menuOpen&&<ClubMenu onClose={()=>setMenuOpen(false)} onNavigate={path=>{setMenuOpen(false);onNavigate?.(path)}}/>}
       </dialog>
     </div>

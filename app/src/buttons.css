@@ -90,3 +90,6 @@
  .club-app .table-actions>.btn{flex:1 1 auto;width:auto}
  .club-app .upi-review-actions>.btn{flex:1 1 100%;width:100%}
 }
+
+.club-app .field-error{display:block;margin-top:8px;font:500 12px/1.5 var(--body);color:#ffb1a3;letter-spacing:0}
+.club-app .field :is(input,select,textarea)[aria-invalid=true]{border-color:#dc786a;outline-color:#dc786a}

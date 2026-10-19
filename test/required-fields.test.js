@@ -13,3 +13,12 @@ test('required profile names cannot be cleared while optional profile fields rem
  assert.equal(settingsSchema.safeParse({clubName:'   '}).success,false);
  assert.equal(settingsSchema.safeParse({clubName:'Coding Club',email:'',phone:'',address:''}).success,true);
 });
+
+test('optional event lists may be omitted but added rows cannot be blank',async()=>{
+ const {eventExtras}=await import('../src/feature-schemas.js');
+ for(const field of ['rules','objectives','guidelines','highlights','photos']){
+  assert.equal(eventExtras[field].safeParse(undefined).success,true);
+  assert.equal(eventExtras[field].safeParse([]).success,true);
+  assert.equal(eventExtras[field].safeParse(['   ']).success,false);
+ }
+});

@@ -289,9 +289,10 @@ test('refresh and browser Back retain registration, admin, leader and event dest
   await expect(page.locator('.kxr-root')).toHaveCount(0);
  }
  await go(page,'events');await expect.poll(()=>page.locator('#section-events').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+ await page.locator('.gallery-card-image').first().scrollIntoViewIfNeeded();const sourceTop=await page.evaluate(()=>scrollY);
  await page.locator('.gallery-card-image').first().click();await expect(page).toHaveURL(new RegExp('#/event/'+event.id+'$'));
  await page.goBack();await expect(page).toHaveURL(/#\/events$/);
- await expect.poll(()=>page.locator('#section-events').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+ await expect.poll(()=>page.evaluate(top=>Math.abs(scrollY-top),sourceTop)).toBeLessThan(5);
 });
 test('required fields reject whitespace while blank optional registration fields remain valid',async({page})=>{
  const s=await fixture(page);await go(page,'account');await page.getByRole('button',{name:'New here?'}).click();
@@ -309,4 +310,51 @@ test('required admin and leader fields reject whitespace before API submission',
  await page.getByLabel('Title',{exact:false}).first().fill('   ');await page.getByRole('button',{name:'Save',exact:true}).click();expect(call(s,'/admin/events/'+event.id,'PATCH')).toBeFalsy();
  await page.getByRole('button',{name:'Close dialog',exact:true}).click();await go(page,'leader');
  await page.getByLabel('Leader code').fill('   ');await page.getByLabel('Password').fill('   ');await page.getByRole('button',{name:'Open dashboard'}).click();expect(call(s,'/leader/login')).toBeFalsy();
+});
+
+test('Back restores Events opened by scrolling the homepage without a section hash',async({page})=>{
+ await fixture(page);await page.goto('/');await page.locator('#club-preloader').waitFor({state:'hidden'});
+ await page.evaluate(()=>scrollTo(0,document.querySelector('#section-events').offsetTop));
+ const link=page.locator('.gallery-card-image').first();await link.scrollIntoViewIfNeeded();
+ const before=await page.evaluate(()=>scrollY);expect(before).toBeGreaterThan(500);
+ await link.click();await expect(page).toHaveURL(new RegExp('#/event/'+event.id+'$'));
+ await page.goBack();await expect(page).not.toHaveURL(/#\/event/);
+ await expect.poll(()=>page.evaluate(()=>scrollY)).toBeGreaterThan(500);
+ await expect.poll(()=>page.evaluate(before=>Math.abs(scrollY-before),before)).toBeLessThan(5);
+ await page.reload();await expect.poll(()=>page.evaluate(before=>Math.abs(scrollY-before),before)).toBeLessThan(5);
+});
+
+test.describe('animated navigation history',()=>{
+ test.use({reducedMotion:'no-preference'});
+ test('closing the main menu cannot pull faculty navigation back to the hero',async({page})=>{
+  await fixture(page);await page.goto('/');await page.locator('#club-preloader').waitFor({state:'hidden'});
+  await expect.poll(()=>page.evaluate(()=>Boolean(window.__ccLenis))).toBe(true);
+  await page.getByRole('button',{name:'Open navigation',exact:true}).click();
+  await page.locator('.stack-menu-link').filter({hasText:'Faculty'}).click();
+  await expect.poll(()=>page.locator('#section-faculty').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+  await page.waitForTimeout(1200);
+  await expect.poll(()=>page.locator('#section-faculty').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+ });
+});
+
+test('submission capture blocks empty registration, admin and leader forms even when native submit validation is bypassed',async({page})=>{
+ const s=await fixture(page);await go(page,'account');await page.getByRole('button',{name:'New here?'}).click();
+ await page.locator('form').evaluate(form=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+ expect(call(s,'/auth/register')).toBeFalsy();await expect(page.locator('.field-error').first()).toBeVisible();
+ await go(page,'leader');await page.locator('form').evaluate(form=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+ expect(call(s,'/leader/login')).toBeFalsy();await expect(page.locator('.field-error').first()).toBeVisible();
+ await go(page,'admin');await page.locator('form').evaluate(form=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+ expect(call(s,'/auth/login')).toBeFalsy();await expect(page.locator('.field-error').first()).toBeVisible();
+});
+
+test.describe('late animated layout restoration',()=>{
+ test.use({reducedMotion:'no-preference'});
+ test('a delayed event response cannot move a faculty refresh back toward the hero',async({page})=>{
+  await fixture(page);await page.route('**/api/events',async route=>{await new Promise(resolve=>setTimeout(resolve,6500));await route.fulfill({json:[event]})});
+  const response=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/events');
+  await page.goto('/#/faculty',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'SKIP INTRO'}).click();
+  await expect.poll(()=>page.evaluate(()=>Boolean(window.__ccLenis))).toBe(true);
+  await response;
+  await expect.poll(()=>page.locator('#section-faculty').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
+ });
 });

@@ -8,12 +8,12 @@ export const eventExtras={
  category:z.enum(['Hackathons','Coding competitions','Workshops','Seminars','Other']).optional(),
  tagline:text(200).optional(),tone:z.enum(['lime','lavender','coral','blue']).optional(),
  eligibility:text(3000).optional(),prizes:text(3000).optional(),contact:text(1000).optional(),
- rules:z.array(text(1000)).max(50).optional(),guidelines:z.array(text(1000)).max(50).optional(),
- objectives:z.array(text(1000)).max(50).optional(),highlights:z.array(text(1000)).max(50).optional(),
+ rules:z.array(text(1000).min(1)).max(50).optional(),guidelines:z.array(text(1000).min(1)).max(50).optional(),
+ objectives:z.array(text(1000).min(1)).max(50).optional(),highlights:z.array(text(1000).min(1)).max(50).optional(),
  schedule:z.array(z.object({time:text(80).min(1),title:text(300).min(1)}).strict()).max(100).optional(),
  faqs:z.array(z.object({q:text(500).min(1),a:text(3000).min(1)}).strict()).max(50).optional(),
  winners:z.array(z.object({place:text(100).min(1),name:text(200).min(1)}).strict()).max(50).optional(),
- photos:z.array(imageUrl).max(50).optional(),participants:z.number().int().min(0).optional(),
+ photos:z.array(imageUrl.refine(value=>value.trim().length>0,'Photo URL is required')).max(50).optional(),participants:z.number().int().min(0).optional(),
 };
 const publicProfile={bio:text(3000).optional(),year:text(40).optional(),qualification:text(1000).optional(),interests:text(2000).optional(),email:z.union([z.literal(''),z.email()]).optional(),phone:text(30).optional(),cv:webUrl.optional(),source_url:webUrl.optional(),source_retrieved:text(40).optional(),college:text(200).optional(),placeholder:z.boolean().optional(),portfolio:webUrl.optional(),github:webUrl.optional(),linkedin:webUrl.optional()};
 export const facultyExtras=publicProfile;
