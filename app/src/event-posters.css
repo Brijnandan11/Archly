@@ -2,19 +2,14 @@
 .club-app .has-portrait-poster .gallery-card-image{background:#111115}.club-app .has-portrait-poster .gallery-event-photo{object-fit:contain;width:100%;height:100%}.gallery-event-venue{font-size:11px;color:#c6c1cc;line-height:1.6;margin:8px 0 0}
 @media(max-width:650px){.event-poster-full{margin-bottom:36px}.event-poster-facts{grid-template-columns:1fr;gap:0}.event-poster-information h1{font-size:48px}}
 
-/* Match the card to the poster's native ratio instead of letterboxing artwork. */
-.club-app .gallery-posters .gallery-viewport{overflow:visible;margin-top:42px}
-.club-app .gallery-posters .gallery-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(20px,2.4vw,36px);width:100%;max-width:1520px;margin:0 auto;padding:20px 4vw 40px;position:relative;inset:auto;transform:none!important}
-.club-app .gallery-posters .gallery-card{width:100%;max-width:none;min-width:0;flex-basis:auto;margin:0;transform:none!important;opacity:1!important}
-.club-app .gallery-posters .gallery-card-image{display:block;aspect-ratio:2/3!important;max-height:none!important;min-height:0;height:auto;padding:0;background:#111115;border:1px solid #16171426;border-radius:6px;overflow:hidden;transition:transform .3s ease,box-shadow .3s ease}
+/* Preserve the floating scroll animation while matching each frame to its poster. */
+.club-app .gallery-posters .gallery-card-image{display:block;aspect-ratio:2/3!important;max-height:none!important;min-height:0;height:auto;padding:0;background:#111115;border:1px solid #16171426;border-radius:6px;overflow:hidden}
 .club-app .gallery-posters .gallery-event-photo{display:block;width:100%;height:100%;object-fit:contain;filter:none;transform:none!important}
-.club-app .gallery-posters .gallery-art-motion{transform:none!important;opacity:1!important}
-.club-app .gallery-posters .gallery-card-image:hover{transform:translateY(-3px);box-shadow:0 12px 30px #1111151a}
-.club-app .gallery-posters .gallery-open,.club-app .gallery-posters .gallery-controls,.club-app .gallery-posters .gallery-counter{display:none}
-.club-app .gallery-posters .gallery-hud{justify-content:flex-end}
+.club-app .gallery-posters .gallery-open{display:none}
 .club-app .gallery-posters .gallery-event-venue{color:var(--gallery-muted)}
-.club-app .gallery-posters .gallery-card-info{padding-top:16px;margin-top:16px}
+.club-app .gallery-posters.is-kinetic .gallery-card{width:clamp(160px,24svh,270px);flex-basis:clamp(160px,24svh,270px);max-width:none;margin:0}
+.club-app .gallery-posters.is-kinetic .gallery-rail{top:12svh}
+.club-app .gallery-posters.is-kinetic .gallery-event-venue{display:none}
+.club-app .gallery-posters.is-kinetic .gallery-event-title h3{font-size:22px}
+.club-app .gallery-posters.is-kinetic .gallery-card-info{padding-top:10px;margin-top:10px}
 .event-poster-full .event-art{padding:0;overflow:hidden}
-@media(max-width:1100px){.club-app .gallery-posters .gallery-rail{grid-template-columns:repeat(2,minmax(0,1fr));max-width:900px;gap:40px 28px}}
-@media(max-width:600px){.club-app .gallery-posters .gallery-rail{grid-template-columns:1fr;max-width:440px;padding:12px 22px 32px;gap:38px}.club-app .gallery-posters .gallery-viewport{margin-top:22px}}
-@media(prefers-reduced-motion:reduce){.club-app .gallery-posters .gallery-card-image{transition:none}.club-app .gallery-posters .gallery-card-image:hover{transform:none}}
