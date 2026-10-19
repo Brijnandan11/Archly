@@ -6,6 +6,7 @@ import {rateLimit} from 'express-rate-limit';
 import {query,tx} from './db.js';
 import {auth,role,handler,validate,fail,audit} from './utils.js';
 import {enqueueMail} from './notifications.js';
+import {generateLeaderPassword} from './leader-password.js';
 import {participantUpdate,settingsSchema} from './feature-schemas.js';
 const r=Router(),admin=[auth,role('ADMIN')];
 const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -38,7 +39,7 @@ r.post('/auth/reset-password',recoveryLimit,validate(z.object({token:z.string().
  });res.json({ok:true});
 }));
 r.post('/admin/leaders/:id/reset-password',...admin,handler(async(req,res)=>{
- const pwd=crypto.randomBytes(18).toString('base64url'),hash=await argon2.hash(pwd,{type:argon2.argon2id});
+ const pwd=generateLeaderPassword(),hash=await argon2.hash(pwd,{type:argon2.argon2id});
  const leader=await tx(async c=>{const result=await c.query('UPDATE club.event_leaders SET credential_hash=$1 WHERE id=$2 RETURNING id,event_id,user_id,leader_code,is_active',[hash,req.params.id]);if(!result.rowCount)fail(404,'Leader not found');await c.query('UPDATE club.leader_sessions SET revoked_at=now() WHERE leader_id=$1 AND revoked_at IS NULL',[req.params.id]);await audit(c,req.user.id,'ADMIN_RESET_LEADER_PASSWORD',req.params.id);return result.rows[0]});res.json({...leader,one_time_password:pwd});
 }));
 r.patch('/admin/leaders/:id',...admin,validate(z.object({is_active:z.boolean()}).strict()),handler(async(req,res)=>{
