@@ -1,0 +1,55 @@
+{
+  "title": "Hacktober 2026",
+  "slug": "code-sastra-hacktober-2026",
+  "category": "Hackathons",
+  "tagline": "Build. Innovate. Compete.",
+  "description": "A nine-hour team coding marathon where participants from our college and institutions across the region come together to transform ideas into innovative, real-world solutions. Teams work continuously on a given problem statement or choose from a set of challenges to develop a functional prototype within nine hours. Evaluation rounds assess different aspects of the project; the team with the highest cumulative score wins the championship title and prize money.",
+  "event_date": "2026-10-30",
+  "team_size": 10,
+  "banner": "https://codingclub.live/assets/events/hacktober-2026.webp",
+  "eligibility": "Students from Rajkiya Engineering College, Azamgarh, and institutions across the region.",
+  "prizes": "The team with the highest cumulative score across all evaluation rounds receives the championship title and prize money. The prize amount will be announced by the organizers.",
+  "rules": [
+    "Teams may have up to 10 people in total, including the leader.",
+    "The coding marathon lasts nine hours on 30 October 2026. Session start and end times will be announced.",
+    "Work on the provided problem statement or choose from the announced challenges.",
+    "Develop a functional prototype within the nine-hour timeframe.",
+    "Projects are assessed in multiple evaluation rounds on different aspects of the solution.",
+    "The highest cumulative score across all evaluation rounds determines the winner."
+  ],
+  "objectives": [
+    "Build practical solutions to real-world problems.",
+    "Collaborate, code and innovate as a team.",
+    "Transform an idea into a functional prototype within nine hours."
+  ],
+  "faqs": [
+    {
+      "q": "What is Hacktober 2026?",
+      "a": "A college-level, team-based coding marathon that brings developers, innovators and problem solvers together to build innovative solutions to real-world problems at REC Azamgarh. Build. Innovate. Compete."
+    },
+    {
+      "q": "When and where does it take place?",
+      "a": "30 October 2026 at Rajkiya Engineering College, Azamgarh. Duration: nine hours. Session start and end times will be announced."
+    },
+    {
+      "q": "How many people can join a team?",
+      "a": "Up to 10 people in total: one leader and up to nine other students. The leader creates the team in the leader portal."
+    },
+    {
+      "q": "What will teams build?",
+      "a": "Teams work on a given problem statement or choose from the announced challenges, collaborate continuously and develop a functional prototype within the nine-hour timeframe."
+    },
+    {
+      "q": "How are projects evaluated?",
+      "a": "The hackathon has multiple evaluation rounds assessing different aspects of each project. The final winner has the highest cumulative score across all rounds."
+    },
+    {
+      "q": "What does the winning team receive?",
+      "a": "The championship title and prize money. The organizers will announce the prize amount."
+    },
+    {
+      "q": "How do I register?",
+      "a": "Register once for the Code Sastra programme. The programme registration fee is ₹9 per participant, paid by UPI QR and confirmed after the organizers verify the bank credit. Hacktober does not require a second payment."
+    }
+  ]
+}

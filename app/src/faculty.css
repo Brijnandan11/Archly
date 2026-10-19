@@ -11,6 +11,7 @@
 @media(min-width:1000px){.faculty-mentor-row>.faculty-circle-card:last-child:nth-child(5){grid-column:2 / span 2;width:calc(50% - 25px);justify-self:center}}
 
 /* Two lead profiles, one centered below, then the teaching faculty. */
+.faculty-profile-body>p,.faculty-profile-body dd{white-space:pre-line}
 .faculty-lead-row{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:clamp(25px,4vw,65px)}
 .faculty-lead-row>.faculty-circle-card{grid-column:span 2}
 .faculty-lead-row>.faculty-circle-card:nth-child(3){grid-column:2 / span 2}

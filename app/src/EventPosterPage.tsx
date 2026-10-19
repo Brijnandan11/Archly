@@ -6,7 +6,7 @@ import './event-posters.css';
 
 export default function EventPosterPage({event}:any){
  const details=event.presentation||{};
- const facts=[['Dates',eventDates(event)],['Session timings',eventTime(event)],['Venue',event.venue],['Organiser',details.organiser||'Coding Club'],['Registration fee',eventPrice(event)],['Team size',`${event.teamSize} people, including the leader`],['Participant capacity',details.capacity_pending?'To be announced':event.capacity]];
+ const facts=[['Dates',eventDates(event)],['Session timings',eventTime(event)],['Venue',event.venue],['Organiser',details.organiser||'Coding Club'],['Registration fee',eventPrice(event)],['Team size',event.teamSize===1?'Individual':`Up to ${event.teamSize} people, including the leader`],['Participant capacity',details.capacity_pending?'To be announced':event.capacity]];
  return <section className="section event-poster-page">
   <a className="back-link" href="#/section/events">← ALL EVENTS</a>
   <div className="event-poster-full"><EventArt event={event} large/></div>

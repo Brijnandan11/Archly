@@ -1,4 +1,10 @@
 import {fmt,money} from './model';
+export function orderEvents(events:any[]){
+ return [...events].sort((a,b)=>{
+  const order=(event:any)=>event.presentation?.display_order??(event.slug==='code-sastra-2026'?0:['code-sastra-hacktober-2026','code-sastra-bug-bounty-2026'].includes(event.slug)?1:1000);
+  return order(a)-order(b);
+ });
+}
 export function eventDates(event:any){
  const start=event.date||String(event.event_date||'').slice(0,10);
  const end=event.presentation?.end_date;
