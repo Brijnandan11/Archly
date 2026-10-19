@@ -16,7 +16,7 @@ async function fixture(page,{admin=false,logged=false,fee=0,pending=false}={}){
   else if(path==='/auth/forgot-password')data={ok:true,message:'If an active account exists for this email, a password reset link will be sent.'};
   else if(path==='/auth/reset-password')data={ok:true};
   else if(path==='/events'&&method==='GET')data=state.events;
-  else if(path==='/events/'+event.slug)data=state.events[0];
+  else if(path==='/events/'+event.slug||path==='/events/'+event.id)data=state.events[0];
   else if(['/faculty','/team'].includes(path))data=[];
   else if(path==='/auth/login'||path==='/auth/register')data={token:'user-token',user:{...user,role:state.role}}
   else if(path==='/auth/me'){if(method==='PATCH')Object.assign(state.profile,body);data={...state.profile,role:state.role}}
@@ -111,4 +111,42 @@ test('account profile supports additional fields and password recovery forms use
 });
 test('admin can reset/deactivate leaders and change registration status with a reason',async({page})=>{
  const s=await fixture(page,{admin:true,logged:true});await go(page,'admin');const nav=page.getByRole('navigation',{name:'Admin workspace'});await nav.getByRole('button',{name:'Leaders',exact:true}).click();page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Reset leader password'}).click();await expect(page.getByRole('dialog')).toContainText('rotated-leader-secret');await page.getByRole('button',{name:'Close dialog'}).click();await page.getByRole('button',{name:'Deactivate leader',exact:true}).click();await expect(page.getByRole('button',{name:'Activate leader',exact:true})).toBeVisible();expect(call(s,'/admin/leaders/'+leader.id,'PATCH').body.is_active).toBe(false);await nav.getByRole('button',{name:'Registrations',exact:true}).click();await page.getByLabel('Status for '+registration.registration_code).selectOption('CANCELLED');await page.getByLabel('Reason for '+registration.registration_code).fill('Participant withdrew');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Update registration'}).first().click();await expect.poll(()=>call(s,'/admin/registrations/'+registration.id,'PATCH')?.body.status).toBe('CANCELLED');expect(call(s,'/admin/registrations/'+registration.id,'PATCH').body.reason).toBe('Participant withdrew');expect(s.unexpected).toEqual([]);
+});
+
+test('Register opens sign-in immediately while live event validation is pending',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await fixture(page);
+ await page.route('**/api/events/'+event.slug,async route=>{await new Promise(resolve=>setTimeout(resolve,3000));await route.fulfill({json:event});});
+ await page.goto('/');
+ await page.locator('#club-preloader').waitFor({state:'hidden'});
+ const register=page.locator('a[href="#/register/'+event.id+'"]').first();
+ await register.click();
+ await expect(page.getByRole('heading',{name:'Sign in to your account'})).toBeVisible({timeout:1200});
+ await expect(page.getByRole('heading',{name:'Sign in to your account'})).toBeInViewport();
+});
+
+test('registration confirmation waits for availability and agreement',async({page})=>{
+ const s=await fixture(page,{logged:true});
+ await page.route('**/api/events/'+event.slug,async route=>{await new Promise(resolve=>setTimeout(resolve,3000));await route.fulfill({json:event});});
+ await page.goto('/');
+ await page.locator('a[href="#/register/'+event.id+'"]').first().click();
+ await expect(page.getByRole('heading',{name:user.full_name,exact:true})).toBeVisible({timeout:1200});
+ await page.getByRole('checkbox').check();
+ await expect(page.getByRole('button',{name:'Checking availability…'})).toBeDisabled();
+ expect(call(s,'/events/'+event.id+'/register')).toBeUndefined();
+ await expect(page.getByRole('button',{name:'Confirm registration'})).toBeEnabled();
+ await page.getByRole('button',{name:'Confirm registration'}).click();
+ await expect(page.getByRole('heading',{name:'Registration confirmed'})).toBeVisible();
+});
+
+test('direct registration URL resolves the event by ID without a loaded event list',async({page})=>{
+ await fixture(page);
+ await page.route('**/api/events?*',route=>route.fulfill({json:[]}));
+ await page.route('**/api/events/'+event.id,route=>route.fulfill({json:event}));
+ await page.goto('/#/register/'+event.id);
+ await expect(page.getByRole('heading',{name:'Sign in to your account'})).toBeVisible();
+ await page.getByLabel('Email',{exact:false}).fill(user.email);
+ await page.getByLabel('Password',{exact:false}).fill('Long-test-password');
+ await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Save your spot.',exact:false})).toBeVisible();
 });
