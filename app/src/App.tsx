@@ -44,7 +44,7 @@ function ConnectedApp(){
    else if(group==='settings')next.settings={...initial.settings,...data};
    else next.profiles=[...next.profiles.filter(p=>p.kind!==(group==='faculty'?'faculty':'student')),...data.map((p:any)=>profileView(p,group==='faculty'?'faculty':'student'))];
    storeRef.current=next;setStore(next);
-   if(group==='events'||group==='faculty')preloadPublicImages({[group]:data});
+   if(group!=='settings')preloadPublicImages({[group]:data});
   }));
   if(results.every(r=>r.status==='rejected')&&!Object.keys(publicContent.current).length)setLoadError('Club information is temporarily unavailable. Please try again.');
  }

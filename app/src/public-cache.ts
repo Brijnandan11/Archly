@@ -1,4 +1,5 @@
 import {API_BASE} from './api';
+import {publicImageUrl} from './public-images';
 declare const __PUBLIC_SNAPSHOT__: any;
 export type PublicContent={events?:any[];faculty?:any[];team?:any[];settings?:Record<string,any>};
 const cacheKey='cc-public-content-v1:'+API_BASE;
@@ -21,7 +22,17 @@ export function readPublicContent():PublicContent{
 export function savePublicContent(content:PublicContent){
  try{localStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),data:valid(content)}));}catch{}
 }
+const preloaded=new Set<string>();
+const pendingImages=new Map<string,HTMLImageElement>();
 export function preloadPublicImages(content:PublicContent){
- const urls=[...(content.events||[]).slice(0,4).map(e=>e.banner||e.photos?.[0]),...(content.faculty||[]).slice(0,3).map(p=>p.photo)].filter(Boolean);
- for(const url of new Set(urls)){const image=new Image();image.decoding='async';image.src=url;}
+ const urls=[...(content.events||[]).map(e=>e.banner||e.photos?.[0]),...(content.faculty||[]).map(p=>p.photo),...(content.team||[]).map(p=>p.photo)].filter(Boolean).map(publicImageUrl);
+ for(const url of new Set(urls)){
+  if(preloaded.has(url))continue;
+  preloaded.add(url);
+  const image=new Image();pendingImages.set(url,image);
+  image.decoding='async';image.loading='eager';image.fetchPriority='low';
+  image.onload=()=>{pendingImages.delete(url)};
+  image.onerror=()=>{pendingImages.delete(url);preloaded.delete(url)};
+  image.src=url;
+ }
 }

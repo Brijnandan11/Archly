@@ -1,14 +1,14 @@
 import ProfileDetails from './ProfileDetails';
-import React,{useEffect,useState} from 'react';
+import React from 'react';
+import ResilientImage from './ResilientImage';
 import {ChapterHeader,Notice} from './ui';
 import type {Store} from './model';
 import {facultyCollege} from './facultyData';
 import './faculty.css';
 type FacultyProfile={id:string;name:string;role:string;designation?:string;department?:string;photo?:string;linkedin?:string;placeholder?:boolean;order:number;kind:string;qualification?:string;interests?:string;email?:string;phone?:string;cv?:string;sourceUrl?:string;bio?:string;year?:string;github?:string;portfolio?:string;source_url?:string};
 export function FacultyCircleCard({person,index}:{person:FacultyProfile;index:number}){
- const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[person.photo]);const hasDetails=person.qualification||person.interests||person.email||person.phone||person.cv;
  return <article className={'faculty-circle-card reveal tilt faculty-tone-'+index%3} aria-labelledby={'faculty-name-'+person.id}>
- <div className="faculty-portrait-shell"><span className="faculty-orbit" aria-hidden="true"/><div className="faculty-portrait">{person.photo&&!failed?<img key={person.photo} src={person.photo} alt={person.name} loading="lazy" decoding="async" onError={()=>setFailed(true)}/>:<svg className="faculty-placeholder" viewBox="0 0 240 240" aria-hidden="true"><circle className="faculty-placeholder-halo" cx="120" cy="115" r="82"/><circle cx="120" cy="88" r="34"/><path d="M36 244v-16c0-91 168-91 168 0v16z"/></svg>}<span className="faculty-portrait-shine" aria-hidden="true"/></div></div>
+ <div className="faculty-portrait-shell"><span className="faculty-orbit" aria-hidden="true"/><div className="faculty-portrait"><ResilientImage src={person.photo} alt={person.name} fetchPriority="low" fallback={<svg className="faculty-placeholder" viewBox="0 0 240 240" aria-hidden="true"><circle className="faculty-placeholder-halo" cx="120" cy="115" r="82"/><circle cx="120" cy="88" r="34"/><path d="M36 244v-16c0-91 168-91 168 0v16z"/></svg>}/><span className="faculty-portrait-shine" aria-hidden="true"/></div></div>
  <div className="faculty-circle-copy"><h3 id={'faculty-name-'+person.id}>{person.name}</h3><p className="faculty-circle-role">{person.designation||person.role}</p>{person.department&&<p className="faculty-circle-department">{person.department}</p>}
  <ProfileDetails person={person}/></div></article>
 }

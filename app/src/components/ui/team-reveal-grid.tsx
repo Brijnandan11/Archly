@@ -2,10 +2,11 @@
 // Adapted from Ashutoshx7 / VengeanceUI TeamRevealGrid (MIT).
 // Copyright (c) 2025-2026 Ashutoshx7. License: /assets/licenses/vengeance-ui-MIT.txt
 import React,{useCallback,useEffect,useMemo,useRef,useState,useId} from 'react';
+import ResilientImage from '../../ResilientImage';
 import './team-reveal-grid.css';
 export interface TeamRevealMember {id:string;name:string;role:string;expertise:string;image?:string;imageAlt?:string;imagePosition?:string;accent?:string;github?:string;portfolio?:string;details?:React.ReactNode}
 export interface TeamRevealGridProps extends Omit<React.ComponentPropsWithoutRef<'section'>,'title'> {eyebrow?:string;title?:string;description?:string;members:readonly TeamRevealMember[];activeMemberId?:string|null;defaultActiveMemberId?:string|null;onActiveMemberChange?:(id:string|null)=>void;autoPlay?:boolean;rotationInterval?:number}
-function Portrait({member}:{member:TeamRevealMember}){const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[member.image]);return <div className="trg-portrait">{member.image&&!failed?<img src={member.image} alt={member.imageAlt??member.name} loading="lazy" decoding="async" width="480" height="600" draggable={false} onError={()=>setFailed(true)} style={{objectPosition:member.imagePosition??'center 30%'}}/>:<div className="trg-fallback" aria-label={member.name}>{member.name.split(/\s+/).slice(0,2).map(part=>part[0]).join('')}</div>}<span className="trg-shade" aria-hidden="true"/></div>}
+function Portrait({member}:{member:TeamRevealMember}){return <div className="trg-portrait"><ResilientImage src={member.image} alt={member.imageAlt??member.name} fetchPriority="low" width="480" height="600" draggable={false} style={{objectPosition:member.imagePosition??'center 30%'}} fallback={<div className="trg-fallback" aria-label={member.name}>{member.name.split(/\s+/).slice(0,2).map(part=>part[0]).join('')}</div>}/><span className="trg-shade" aria-hidden="true"/></div>}
 export function TeamRevealGrid({eyebrow='THE PEOPLE BEHIND THE CLUB',title='Meet the team',description='Different strengths. One shared direction.',members,activeMemberId,defaultActiveMemberId,onActiveMemberChange,autoPlay=true,rotationInterval=3200,className='',...props}:TeamRevealGridProps){
  const firstMemberId=members[0]?.id??null;
  const [internalActiveId,setInternalActiveId]=useState<string|null>(defaultActiveMemberId===undefined?firstMemberId:defaultActiveMemberId);
