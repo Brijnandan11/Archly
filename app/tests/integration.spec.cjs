@@ -1,11 +1,11 @@
 const {test,expect}=require('@playwright/test');
-const event={id:'11111111-1111-4111-8111-111111111111',title:'Connected workshop',slug:'connected-workshop',description:'Build useful things together.',event_date:'2099-01-01',start_time:'10:00:00',end_time:'12:00:00',venue:'Campus lab',registration_fee:0,team_size:2,max_participants:20,registration_start:'2020-01-01T00:00:00Z',registration_deadline:'2098-12-31T00:00:00Z',status:'OPEN'};
+const event={id:'11111111-1111-4111-8111-111111111111',title:'Connected workshop',slug:'connected-workshop',description:'Build useful things together.',event_date:'2099-01-01',start_time:'10:00:00',end_time:'12:00:00',venue:'Campus lab',registration_fee:0,team_size:3,max_participants:20,registration_start:'2020-01-01T00:00:00Z',registration_deadline:'2098-12-31T00:00:00Z',status:'OPEN'};
 const user={id:'22222222-2222-4222-8222-222222222222',email:'student@example.invalid',full_name:'Connected Student',role:'PARTICIPANT',department:'IT',academic_year:2};
 const registration={id:'33333333-3333-4333-8333-333333333333',registration_code:'CC99-00001',event_id:event.id,user_id:user.id,title:event.title,full_name:user.full_name,email:user.email,status:'CONFIRMED',created_at:'2026-01-01T00:00:00Z'};
 const leader={id:'44444444-4444-4444-8444-444444444444',leader_code:'CC99-L001',event_id:event.id,user_id:user.id,full_name:user.full_name,event_title:event.title};
-const team={id:'55555555-5555-4555-8555-555555555555',name:'Connected team',event_id:event.id,leader_id:leader.id,leader_code:leader.leader_code,locked:false,team_size:2,members:[],remaining_slots:2};
-async function fixture(page,{admin=false,logged=false,fee=0,pending=false}={}){
- const state={calls:[],registrations:pending?[{...registration,status:'PENDING'}]:[],events:[{...event,registration_fee:fee}],members:[],unexpected:[],role:admin?'ADMIN':'PARTICIPANT',settings:{clubName:'Connected Club'},profile:{...user},leaders:[{...leader,is_active:true}],adminRegistrations:[{...registration},{...registration,id:'66666666-6666-4666-8666-666666666666',user_id:'77777777-7777-4777-8777-777777777777',full_name:'Second Student',registration_code:'CC99-00002'}]};
+const team={id:'55555555-5555-4555-8555-555555555555',name:'Connected team',event_id:event.id,leader_id:leader.id,leader_code:leader.leader_code,locked:false,team_size:3,members:[],remaining_slots:2};
+async function fixture(page,{admin=false,logged=false,fee=0,pending=false,noLeaderTeam=false}={}){
+ const state={teamCreated:!noLeaderTeam,teamName:team.name,calls:[],registrations:pending?[{...registration,status:'PENDING'}]:[],events:[{...event,registration_fee:fee}],members:[],unexpected:[],role:admin?'ADMIN':'PARTICIPANT',settings:{clubName:'Connected Club'},profile:{...user},leaders:[{...leader,is_active:true}],adminRegistrations:[{...registration},{...registration,id:'66666666-6666-4666-8666-666666666666',user_id:'77777777-7777-4777-8777-777777777777',full_name:'Second Student',registration_code:'CC99-00002'}]};
  await page.addInitScript(({logged})=>{if(logged)sessionStorage.setItem('cc-user-token','user-token')},{logged});
  await page.route('**/api/**',async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname.slice(4),method=req.method();let body;try{body=req.postDataJSON()}catch{body=req.postData()}
@@ -29,10 +29,11 @@ async function fixture(page,{admin=false,logged=false,fee=0,pending=false}={}){
   else if(path==='/payments/verify'){state.registrations[0].status='CONFIRMED';data={status:'PAID'}}
   else if(path==='/leader/login')data={token:'leader-token',leader_id:leader.leader_code,event_id:event.id};
   else if(path==='/leader/logout')data={ok:true};
-  else if(path==='/leader/session')data={leader_id:leader.leader_code,event_id:event.id,user_id:user.id};
+  else if(path==='/leader/session')data={leader_id:leader.leader_code,event_id:event.id,user_id:user.id,full_name:user.full_name};
   else if(path==='/leader/event')data=event;
-  else if(path==='/leader/team')data={...team,members:state.members,remaining_slots:2-state.members.length};
-  else if(path==='/leader/team/spin'){state.members.push({full_name:'Allocated Student',registration_code:'CC99-00002'});data={selected:{id:'member-id',...state.members[0]},remaining_slots:1}}
+  else if(path==='/leader/team'&&method==='POST'){state.teamCreated=true;state.teamName=body.name;data={...team,name:body.name};status=201}
+  else if(path==='/leader/team'){if(!state.teamCreated){status=404;data={error:'Team not found'}}else data={...team,name:state.teamName,leader_name:user.full_name,members:state.members,remaining_slots:2-state.members.length};}
+  else if(path==='/leader/team/spin'){state.members.push({full_name:state.members.length?'Second Allocated Student':'Allocated Student',registration_code:'CC99-0000'+(state.members.length+2)});data={selected:{id:'member-'+state.members.length,...state.members.at(-1)},remaining_slots:2-state.members.length}}
   else if(path==='/health')data={database:'connected',status:'ok'};
   else if(path==='/admin/dashboard/summary')data={total_events:1,total_registrations:1};
   else if(path==='/admin/dashboard')data={registrations:{confirmed:1},paid_payments:0};
@@ -149,4 +150,24 @@ test('direct registration URL resolves the event by ID without a loaded event li
  await page.getByLabel('Password',{exact:false}).fill('Long-test-password');
  await page.getByRole('button',{name:'Sign in',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Save your spot.',exact:false})).toBeVisible();
+});
+
+test('leader creates their own team and allocates two students with names',async({page})=>{
+ const s=await fixture(page,{noLeaderTeam:true});
+ await go(page,'leader');
+ await page.getByLabel('Leader code',{exact:false}).fill(leader.leader_code);
+ await page.getByLabel('Password',{exact:false}).fill('leader-password');
+ await page.getByRole('button',{name:'Open dashboard'}).click();
+ await expect(page.getByRole('heading',{name:'Create your team',exact:true})).toBeVisible();
+ await page.getByLabel('Team name',{exact:false}).fill('Student Builders');
+ await page.getByRole('button',{name:'Create my team'}).click();
+ await expect(page.getByRole('heading',{name:'Student Builders',exact:true})).toBeVisible();
+ expect(call(s,'/leader/team').body).toEqual({name:'Student Builders'});
+ await expect(page.getByText('1/3 team members',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Allocate next participant'}).click();
+ await expect(page.getByText('2/3 team members',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Allocate next participant'}).click();
+ await expect(page.getByText('3/3 team members',{exact:false})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Allocate next participant'})).toBeDisabled();
+ await expect(page.locator('.list-item').filter({hasText:'Allocated Student'})).toHaveCount(2);
 });

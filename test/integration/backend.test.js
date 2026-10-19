@@ -100,7 +100,10 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
    leader.token=(await request('POST','/api/leader/login',{leader_id:leader.leader_code,password:leader.one_time_password})).token;
    assert.equal((await request('GET','/api/leader/session',undefined,leader.token)).user_id,participant.user.id);
    assert.equal((await request('GET','/api/leader/event',undefined,leader.token)).id,reg.event_id);
-   team=await request('POST',`/api/admin/events/${reg.event_id}/teams`,{leader_id:leader.id,name:'Integration team'},admin.token,201);
+   await request('POST','/api/leader/team',{name:'Integration team'},null,401);
+   team=await request('POST','/api/leader/team',{name:'Integration team'},leader.token,201);
+   await request('POST','/api/leader/team',{name:'Duplicate team'},leader.token,409);
+   assert.equal((await request('GET','/api/leader/team',undefined,leader.token)).remaining_slots,1);
   });
   await t.test('team spin under concurrency never assigns a participant twice',async()=>{
    const otherReg=await request('POST',`/api/events/${reg.event_id}/register`,undefined,other.token,201);
@@ -126,6 +129,20 @@ test('full backend workflows against PostgreSQL',{timeout:240_000},async t=>{
    const ev=await event('capacity',{max_participants:1});
    const responses=await Promise.all([participant,other].map(u=>fetch(`${base}/api/events/${ev.id}/register`,{method:'POST',headers:{Authorization:'Bearer '+u.token}})));
    assert.deepEqual(responses.map(x=>x.status).sort(),[201,409]);
+  });
+  await t.test('leader creates a three-person team and can allocate only two other students',async()=>{
+   const ev=await event('three-person-team',{team_size:3});
+   for(const u of [admin,participant,other])await request('POST','/api/events/'+ev.id+'/register',undefined,u.token,201);
+   const l=await request('POST','/api/admin/events/'+ev.id+'/leaders',{user_id:admin.user.id},admin.token,201);
+   const login=await request('POST','/api/leader/login',{leader_id:l.leader_code,password:l.one_time_password});
+   await request('POST','/api/leader/team',{name:'Three people'},login.token,201);
+   assert.equal((await request('GET','/api/leader/team',undefined,login.token)).remaining_slots,2);
+   const first=await request('POST','/api/leader/team/spin',undefined,login.token);
+   const second=await request('POST','/api/leader/team/spin',undefined,login.token);
+   assert.notEqual(first.selected.id,second.selected.id);assert.ok(first.selected.full_name);assert.equal(second.remaining_slots,0);
+   await request('POST','/api/leader/team/spin',undefined,login.token,409);
+   const roster=await request('GET','/api/leader/team',undefined,login.token);
+   assert.equal(roster.total_members,3);assert.equal(roster.members.length,2);assert.ok(roster.leader_name);
   });
   await t.test('paid order creation, repeat idempotency and verified capture (simulated gateway)',async()=>{
    const ev=await event('paid',{registration_fee:25000});

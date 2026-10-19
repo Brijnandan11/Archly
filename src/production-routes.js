@@ -4,6 +4,7 @@ import {auth,role,handler,validate,fail,audit} from './utils.js';
 import {query,tx} from './db.js';
 import {config} from './config.js';
 import {deliverNotifications} from './notifications.js';
+import {memberCapacity} from './team-capacity.js';
 const r=Router(), uuid=z.string().uuid(), admin=[auth,role('ADMIN')];
 r.post('/internal/notifications/process',handler(async(req,res)=>{
  const supplied=req.headers['x-worker-secret'];
@@ -18,7 +19,7 @@ r.post('/admin/teams/:id/move',...admin,validate(z.object({registration_id:uuid,
   const teams=(await c.query('SELECT t.*,e.team_size FROM club.teams t JOIN club.events e ON e.id=t.event_id WHERE t.id=ANY($1::uuid[]) ORDER BY t.id FOR UPDATE OF t',[[req.params.id,destination_team_id]])).rows;
   if(teams.length!==2)fail(404,'Team not found');const origin=teams.find(t=>t.id===req.params.id),dest=teams.find(t=>t.id===destination_team_id);
   if(origin.event_id!==dest.event_id)fail(409,'Teams must belong to same event');if(dest.locked)fail(409,'Destination locked');
-  const count=await c.query('SELECT count(*)::int AS n FROM club.team_members WHERE team_id=$1',[dest.id]);if(count.rows[0].n>=dest.team_size)fail(409,'Destination full');
+  const count=await c.query('SELECT count(*)::int AS n FROM club.team_members WHERE team_id=$1',[dest.id]);if(count.rows[0].n>=memberCapacity(dest.team_size))fail(409,'Destination full');
   const moved=await c.query('UPDATE club.team_members SET team_id=$1 WHERE team_id=$2 AND registration_id=$3 RETURNING *',[dest.id,origin.id,registration_id]);if(!moved.rowCount)fail(404,'Team member not found');
   await audit(c,req.user.id,'ADMIN_MOVED_TEAM_MEMBER',dest.id,{from:origin.id,registration_id});return moved.rows[0];
  });res.json(result);

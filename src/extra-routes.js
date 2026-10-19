@@ -7,6 +7,7 @@ import {query,tx} from './db.js';
 import {config} from './config.js';
 import {enqueueMail} from './notifications.js';
 import {auth,role,handler,validate,fail,audit,pagination} from './utils.js';
+import {memberCapacity,remainingSlots} from './team-capacity.js';
 const r=Router(), uuid=z.string().uuid(), str=z.string().trim();
 const admin=[auth,role('ADMIN')];
 // Admin read endpoints include drafts and operational records; credentials never leave these lists.
@@ -20,7 +21,7 @@ const lead=handler(async(req,res,next)=>{
  const digest=crypto.createHash('sha256').update(bearer).digest('hex');
  const session=await query('SELECT leader_id FROM club.leader_sessions WHERE token_hash=$1 AND expires_at>now() AND revoked_at IS NULL',[digest]);
  if(!session.rows[0])fail(401,'Leader session expired');
- const {rows}=await query('SELECT l.id,l.event_id,l.user_id,l.leader_code,u.is_active AS user_active,l.is_active FROM club.event_leaders l JOIN club.users u ON u.id=l.user_id WHERE l.id=$1',[session.rows[0].leader_id]);
+ const {rows}=await query('SELECT l.id,l.event_id,l.user_id,l.leader_code,p.full_name,u.is_active AS user_active,l.is_active FROM club.event_leaders l JOIN club.users u ON u.id=l.user_id JOIN club.participant_profiles p ON p.user_id=l.user_id WHERE l.id=$1',[session.rows[0].leader_id]);
  if(!rows[0]?.is_active||!rows[0]?.user_active)fail(401,'Leader inactive');req.leader=rows[0];req.leaderDigest=digest;next();
 });
 r.post('/leader/login',rateLimit({windowMs:15*60_000,limit:10,standardHeaders:'draft-7',legacyHeaders:false}),validate(z.object({leader_id:str.min(3),password:z.string().min(1)}).strict()),handler(async(req,res)=>{
@@ -33,17 +34,29 @@ r.post('/leader/login',rateLimit({windowMs:15*60_000,limit:10,standardHeaders:'d
  res.json({token,expires_in:28800,leader_id:l.leader_code,event_id:l.event_id});
 }));
 r.post('/leader/logout',lead,handler(async(req,res)=>{await query('UPDATE club.leader_sessions SET revoked_at=now() WHERE token_hash=$1',[req.leaderDigest]);res.json({ok:true});}));
-r.get(['/leader/session','/leader/me'],lead,(req,res)=>res.json({leader_id:req.leader.leader_code,event_id:req.leader.event_id,user_id:req.leader.user_id}));
+r.get(['/leader/session','/leader/me'],lead,(req,res)=>res.json({leader_id:req.leader.leader_code,event_id:req.leader.event_id,user_id:req.leader.user_id,full_name:req.leader.full_name}));
 r.get('/leader/event',lead,handler(async(req,res)=>{const a=await query('SELECT id,title,slug,event_date,start_time,end_time,venue,team_size,status FROM club.events WHERE id=$1',[req.leader.event_id]);if(!a.rows[0])fail(404,'Event not found');res.json(a.rows[0]);}));
-r.get(['/leader/session/team','/leader/team'],lead,handler(async(req,res)=>{const a=await query('SELECT t.*,e.team_size FROM club.teams t JOIN club.events e ON e.id=t.event_id WHERE t.leader_id=$1',[req.leader.id]);if(!a.rows[0])fail(404,'Team not found');const b=await query('SELECT p.full_name,r.registration_code FROM club.team_members tm JOIN club.registrations r ON r.id=tm.registration_id JOIN club.participant_profiles p ON p.user_id=r.user_id WHERE tm.team_id=$1 ORDER BY tm.joined_at',[a.rows[0].id]);res.json({...a.rows[0],members:b.rows,remaining_slots:Math.max(0,a.rows[0].team_size-b.rows.length)});}));
+r.post('/leader/team',lead,validate(z.object({name:str.min(2).max(100)}).strict()),handler(async(req,res)=>{
+ const team=await tx(async c=>{
+  const leader=(await c.query('SELECT l.id,e.status FROM club.event_leaders l JOIN club.events e ON e.id=l.event_id WHERE l.id=$1 AND l.is_active=true FOR UPDATE OF l',[req.leader.id])).rows[0];
+  if(!leader)fail(401,'Leader inactive');
+  if(!['OPEN','CLOSED'].includes(leader.status))fail(409,'Team creation is unavailable for this event');
+  const registration=await c.query("SELECT id FROM club.registrations WHERE event_id=$1 AND user_id=$2 AND status='CONFIRMED' FOR UPDATE",[req.leader.event_id,req.leader.user_id]);
+  if(!registration.rowCount)fail(409,'Your event registration must be confirmed');
+  if((await c.query('SELECT id FROM club.teams WHERE leader_id=$1',[req.leader.id])).rowCount)fail(409,'You already have a team');
+  const row=(await c.query('INSERT INTO club.teams(event_id,leader_id,name) VALUES($1,$2,$3) RETURNING *',[req.leader.event_id,req.leader.id,req.body.name])).rows[0];
+  await audit(c,req.leader.user_id,'LEADER_CREATED_TEAM',row.id,{event_id:req.leader.event_id});return row;
+ });res.status(201).json(team);
+}));
+r.get(['/leader/session/team','/leader/team'],lead,handler(async(req,res)=>{const a=await query('SELECT t.*,e.team_size FROM club.teams t JOIN club.events e ON e.id=t.event_id WHERE t.leader_id=$1',[req.leader.id]);if(!a.rows[0])fail(404,'Team not found');const b=await query('SELECT p.full_name,r.registration_code FROM club.team_members tm JOIN club.registrations r ON r.id=tm.registration_id JOIN club.participant_profiles p ON p.user_id=r.user_id WHERE tm.team_id=$1 ORDER BY tm.joined_at',[a.rows[0].id]);res.json({...a.rows[0],leader_name:req.leader.full_name,members:b.rows,total_members:b.rows.length+1,remaining_slots:remainingSlots(a.rows[0].team_size,b.rows.length)});}));
 // This endpoint reuses the same locking and unique constraints as the existing spin endpoint.
 r.post(['/leader/session/team/spin','/leader/team/spin'],lead,handler(async(req,res)=>{const result=await tx(async c=>{
  const active=await c.query('SELECT id FROM club.event_leaders WHERE id=$1 AND is_active=true FOR UPDATE',[req.leader.id]);if(!active.rowCount)fail(401,'Leader inactive');
  const t=(await c.query('SELECT t.*,e.team_size FROM club.teams t JOIN club.events e ON e.id=t.event_id WHERE t.leader_id=$1 FOR UPDATE OF t',[req.leader.id])).rows[0];if(!t)fail(404,'Team not found');if(t.locked)fail(409,'Team locked');
- const n=Number((await c.query('SELECT count(*) n FROM club.team_members WHERE team_id=$1',[t.id])).rows[0].n);if(n>=t.team_size)fail(409,'Team full');
+ const n=Number((await c.query('SELECT count(*) n FROM club.team_members WHERE team_id=$1',[t.id])).rows[0].n);if(n>=memberCapacity(t.team_size))fail(409,'Team full');
  const v=(await c.query(`SELECT rg.id,rg.registration_code,p.full_name FROM club.registrations rg JOIN club.participant_profiles p ON p.user_id=rg.user_id WHERE rg.event_id=$1 AND rg.status='CONFIRMED' AND NOT EXISTS(SELECT 1 FROM club.event_leaders l WHERE l.event_id=rg.event_id AND l.user_id=rg.user_id) AND NOT EXISTS(SELECT 1 FROM club.team_members m WHERE m.event_id=rg.event_id AND m.registration_id=rg.id) ORDER BY random() LIMIT 1 FOR UPDATE OF rg SKIP LOCKED`,[t.event_id])).rows[0];
  if(!v)fail(409,'No eligible participants');
- const ins=await c.query('INSERT INTO club.team_members(team_id,event_id,registration_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING registration_id',[t.id,t.event_id,v.id]);if(!ins.rowCount)fail(409,'Participant claimed by concurrent request');return {selected:v,team_id:t.id,remaining_slots:t.team_size-n-1};});res.json(result);
+ const ins=await c.query('INSERT INTO club.team_members(team_id,event_id,registration_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING registration_id',[t.id,t.event_id,v.id]);if(!ins.rowCount)fail(409,'Participant claimed by concurrent request');return {selected:v,team_id:t.id,remaining_slots:remainingSlots(t.team_size,n+1)};});res.json(result);
 }));
 r.get('/admin/registrations/export',...admin,handler(async(req,res)=>{
  const ev=req.query.event_id||null;if(ev&&!uuid.safeParse(ev).success)fail(400,'Invalid event ID');
@@ -53,7 +66,7 @@ r.get('/admin/registrations/export',...admin,handler(async(req,res)=>{
 }));
 r.post('/admin/teams/:id/members',...admin,validate(z.object({registration_id:uuid}).strict()),handler(async(req,res)=>{const out=await tx(async c=>{
  const t=(await c.query('SELECT t.*,e.team_size FROM club.teams t JOIN club.events e ON e.id=t.event_id WHERE t.id=$1 FOR UPDATE OF t',[req.params.id])).rows[0];if(!t)fail(404,'Team not found');if(t.locked)fail(409,'Team locked');
- const count=Number((await c.query('SELECT count(*) n FROM club.team_members WHERE team_id=$1',[t.id])).rows[0].n);if(count>=t.team_size)fail(409,'Team full');
+ const count=Number((await c.query('SELECT count(*) n FROM club.team_members WHERE team_id=$1',[t.id])).rows[0].n);if(count>=memberCapacity(t.team_size))fail(409,'Team full');
  const reg=(await c.query("SELECT r.id FROM club.registrations r WHERE r.id=$1 AND r.event_id=$2 AND r.status='CONFIRMED' AND NOT EXISTS (SELECT 1 FROM club.event_leaders l WHERE l.event_id=r.event_id AND l.user_id=r.user_id) FOR UPDATE OF r",[req.body.registration_id,t.event_id])).rows[0];if(!reg)fail(409,'Participant not eligible');
  const row=await c.query('INSERT INTO club.team_members(team_id,event_id,registration_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING *',[t.id,t.event_id,reg.id]);if(!row.rowCount)fail(409,'Already in team');await audit(c,req.user.id,'ADMIN_ADDED_TEAM_MEMBER',t.id,{registration_id:reg.id});return row.rows[0];});res.status(201).json(out);
 }));
