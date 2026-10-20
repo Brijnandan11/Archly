@@ -3,12 +3,12 @@
   "slug": "code-sastra-hacktober-2026",
   "category": "Hackathons",
   "tagline": "Build. Innovate. Compete.",
-  "description": "A nine-hour team coding marathon where participants from our college and institutions across the region come together to transform ideas into innovative, real-world solutions. Teams work continuously on a given problem statement or choose from a set of challenges to develop a functional prototype within nine hours. Evaluation rounds assess different aspects of the project; the team with the highest cumulative score wins the championship title and prize money.",
+  "description": "A nine-hour team coding marathon where participants from our college and institutions across the region come together to transform ideas into innovative, real-world solutions. Teams work continuously on a given problem statement or choose from a set of challenges to develop a functional prototype within nine hours. Evaluation rounds assess different aspects of the project; the team with the highest cumulative score wins the championship title.",
   "event_date": "2026-10-30",
   "team_size": 10,
   "banner": "https://codingclub.live/assets/events/hacktober-2026.webp",
   "eligibility": "Students from Rajkiya Engineering College, Azamgarh, and institutions across the region.",
-  "prizes": "The team with the highest cumulative score across all evaluation rounds receives the championship title and prize money. The prize amount will be announced by the organizers.",
+  "prizes": "The team with the highest cumulative score across all evaluation rounds receives the championship title.",
   "rules": [
     "Teams may have up to 10 people in total, including the leader.",
     "The coding marathon lasts nine hours on 30 October 2026. Session start and end times will be announced.",
@@ -45,7 +45,7 @@
     },
     {
       "q": "What does the winning team receive?",
-      "a": "The championship title and prize money. The organizers will announce the prize amount."
+      "a": "The championship title."
     },
     {
       "q": "How do I register?",

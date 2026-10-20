@@ -31,3 +31,16 @@
  .club-app .gallery-posters.is-kinetic .gallery-hud{bottom:38px;padding-top:8px}
  .club-app .gallery-posters.is-kinetic .gallery-foot{padding-block:12px}
 }
+
+/* Reserve separate lanes for the heading, complete poster, and navigation. */
+.club-app .gallery-posters.is-kinetic .gallery-stage{padding-top:28px}
+.club-app .gallery-posters.is-kinetic .gallery-head{display:block}
+.club-app .gallery-posters.is-kinetic .gallery-kicker{flex-direction:row;justify-content:space-between;margin:0 0 12px}
+.club-app .gallery-posters.is-kinetic .gallery-heading{font-size:clamp(48px,8svh,90px)}
+.club-app .gallery-posters.is-kinetic .gallery-heading em{display:inline-block;font-size:.45em;margin:0 0 0 24px;vertical-align:middle;line-height:1.15}
+.club-app .gallery-posters.is-kinetic .gallery-heading>span{display:inline-block}
+.club-app .gallery-posters.is-kinetic .gallery-intro{display:none}
+.club-app .gallery-posters.is-kinetic .gallery-rail{top:0}
+.club-app .gallery-posters.is-kinetic .gallery-card{width:clamp(120px,calc((100svh - 310px)/1.5),360px);flex-basis:clamp(120px,calc((100svh - 310px)/1.5),360px)}
+.club-app .gallery-posters.is-kinetic .gallery-counter{position:static}
+.club-app .gallery-posters.is-kinetic .gallery-art-motion>.gallery-card-image{animation:none}
