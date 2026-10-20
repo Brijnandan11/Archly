@@ -3,7 +3,7 @@ import {defaults,sampleEvents,sampleProfiles} from './data';
 import {officialFaculty} from './facultyData';
 import {committeeMembers} from './committeeMembers';
 import type {Store} from './model';
-export const legacyInitial:Store={events:sampleEvents,profiles:sampleProfiles,registrations:[],leaders:[],teams:[],messages:[],settings:defaults,teamRevealDemoVersion:1,facultyDirectoryVersion:3,committeeDirectoryVersion:2,collegeIdentityVersion:1,editorialCopyVersion:1};
+export const legacyInitial:Store={events:sampleEvents,profiles:sampleProfiles,registrations:[],leaders:[],teams:[],messages:[],settings:defaults,teamRevealDemoVersion:1,facultyDirectoryVersion:4,committeeDirectoryVersion:2,collegeIdentityVersion:1,editorialCopyVersion:1};
 export function readStore():Store{
  try{
   const saved=localStorage.getItem('cc-frontend-v1');if(!saved)return structuredClone(legacyInitial);
@@ -47,6 +47,18 @@ export function readStore():Store{
     return person;
    });
    next.facultyDirectoryVersion=3;changed=true;
+  }
+  if((parsed.facultyDirectoryVersion||0)<4){
+   const currentRanjana=officialFaculty.find(person=>person.id==='faculty-ranjana');
+   next.profiles=next.profiles.map(person=>{
+    if(person.kind!=='faculty')return person;
+    const isLegacyRanjana=person.id==='faculty-ranjna'||person.name==='Mrs. Ranjana'||person.email==='ranjanarao25@gmail.com';
+    if(!isLegacyRanjana)return person;
+    return {...structuredClone(currentRanjana),...person, id:'faculty-ranjana', kind:'faculty', name:'Mrs. Ranjana', department:'Information Technology'};
+   });
+   next.profiles=next.profiles.filter(person=>!(person.kind==='faculty'&&person.id==='faculty-ranjna'));
+   if(!next.profiles.some(person=>person.id==='faculty-ranjana'))next.profiles.push(structuredClone(currentRanjana));
+   next.facultyDirectoryVersion=4;changed=true;
   }
   if(!parsed.editorialCopyVersion){
    next.events=next.events.map(event=>{
