@@ -177,7 +177,7 @@ export const committeeMembers=[
     "year": "",
     "bio": "Coding Club committee member.",
     "photo": "/assets/team/disha-prajapati.jpg",
-    "github": "https://github.com/disha",
+    "github": "https://github.com/DishaPrajapati70",
     "portfolio": "",
     "placeholder": false,
     "order": 12
