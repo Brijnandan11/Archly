@@ -73,4 +73,57 @@ r.delete('/admin/teams/:id/members/:registrationId',...admin,handler(async(req,r
 r.patch('/admin/teams/:id/leader',...admin,validate(z.object({leader_id:uuid}).strict()),handler(async(req,res)=>{const row=await tx(async c=>{const t=(await c.query('SELECT * FROM club.teams WHERE id=$1 FOR UPDATE',[req.params.id])).rows[0];if(!t)fail(404,'Team not found');const q=await c.query('UPDATE club.teams SET leader_id=$1 WHERE id=$2 RETURNING *',[req.body.leader_id,t.id]);await audit(c,req.user.id,'ADMIN_CHANGED_LEADER',t.id,{leader_id:req.body.leader_id});return q.rows[0]});res.json(row);}));
 r.get('/admin/teams/:id/members',...admin,handler(async(req,res)=>{const a=await query('SELECT m.*,p.full_name,r.registration_code FROM club.team_members m JOIN club.registrations r ON r.id=m.registration_id JOIN club.participant_profiles p ON p.user_id=r.user_id WHERE m.team_id=$1 ORDER BY m.joined_at',[req.params.id]);res.json(a.rows);}));
 r.get('/admin/dashboard/summary',...admin,handler(async(req,res)=>{const {rows}=await query(`SELECT (SELECT count(*) FROM club.events)::int total_events,(SELECT count(*) FROM club.events WHERE event_date>=current_date AND status NOT IN('ARCHIVED','CANCELLED'))::int upcoming_events,(SELECT count(*) FROM club.events WHERE event_date<current_date)::int past_events,(SELECT count(*) FROM club.registrations)::int total_registrations,(SELECT count(*) FROM club.registrations WHERE status='CONFIRMED')::int confirmed_registrations,(SELECT count(*) FROM club.registrations WHERE status='PENDING')::int pending_registrations,(SELECT count(*) FROM club.event_leaders)::int total_leaders,(SELECT count(*) FROM club.teams)::int total_teams`);res.json(rows[0]);}));
+// Admin user management: full account lifecycle without direct database access.
+r.get('/admin/users',...admin,handler(async(req,res)=>{
+ const {limit,offset}=pagination(req.query);
+ const search=String(req.query.search||'').trim().slice(0,100);
+ const out=await query(`SELECT u.id,u.email,u.role,u.is_active,u.created_at,p.full_name,p.phone,p.department,p.academic_year,p.college,p.roll_number,p.branch,(SELECT count(*)::int FROM club.registrations r WHERE r.user_id=u.id) registrations FROM club.users u LEFT JOIN club.participant_profiles p ON p.user_id=u.id WHERE ($1='' OR concat_ws(' ',p.full_name,u.email) ILIKE '%'||$1||'%') ORDER BY u.created_at DESC,u.id LIMIT $2 OFFSET $3`,[search,limit,offset]);
+ res.json(out.rows);
+}));
+r.patch('/admin/users/:id',...admin,validate(z.object({is_active:z.boolean().optional(),role:z.enum(['ADMIN','PARTICIPANT']).optional()}).strict()),handler(async(req,res)=>{
+ if(!Object.keys(req.body).length)fail(400,'Nothing to update');
+ const row=await tx(async c=>{
+  const user=(await c.query('SELECT id,role,email FROM club.users WHERE id=$1 FOR UPDATE',[req.params.id])).rows[0];if(!user)fail(404,'User not found');
+  if(req.body.role&&req.params.id===String(req.user.id))fail(409,'You cannot change your own role');
+  const keys=Object.keys(req.body),values=keys.map(k=>req.body[k]);
+  const out=(await c.query(`UPDATE club.users SET ${keys.map((k,i)=>`${k}=$${i+1}`).join(',')},token_version=token_version+1 WHERE id=$${keys.length+1} RETURNING id,email,role,is_active`,[...values,user.id])).rows[0];
+  await audit(c,req.user.id,'ADMIN_UPDATED_USER',user.id,{email:user.email,changes:keys});
+  return out;
+ });
+ res.json(row);
+}));
+// Deleting a user removes registrations, payments, submissions, team memberships and leader grants atomically.
+r.delete('/admin/users/:id',...admin,handler(async(req,res)=>{
+ const result=await tx(async c=>{
+  const user=(await c.query('SELECT id,email,role FROM club.users WHERE id=$1 FOR UPDATE',[req.params.id])).rows[0];if(!user)fail(404,'User not found');
+  if(user.id===req.user.id)fail(409,'You cannot delete your own account');
+  if(user.role==='ADMIN')fail(409,'Deactivate this admin account or demote it first');
+  await c.query('DELETE FROM club.team_members WHERE registration_id IN (SELECT id FROM club.registrations WHERE user_id=$1)',[user.id]);
+  await c.query('DELETE FROM club.payment_refunds WHERE payment_id IN (SELECT id FROM club.payments WHERE registration_id IN (SELECT id FROM club.registrations WHERE user_id=$1))',[user.id]);
+  await c.query('DELETE FROM club.payments WHERE registration_id IN (SELECT id FROM club.registrations WHERE user_id=$1)',[user.id]);
+  await c.query('DELETE FROM club.manual_payment_submissions WHERE registration_id IN (SELECT id FROM club.registrations WHERE user_id=$1)',[user.id]);
+  await c.query('DELETE FROM club.registrations WHERE user_id=$1',[user.id]);
+  await c.query('DELETE FROM club.event_leaders WHERE user_id=$1',[user.id]);
+  await c.query('UPDATE club.audit_logs SET actor_id=NULL WHERE actor_id=$1',[user.id]);
+  await c.query('DELETE FROM club.notification_outbox WHERE recipient=$1',[user.email]);
+  const deleted=(await c.query('DELETE FROM club.users WHERE id=$1 RETURNING id,email',[user.id])).rows[0];
+  await audit(c,req.user.id,'ADMIN_DELETED_USER',user.id,{email:user.email});
+  return deleted;
+ });
+ res.json({ok:true,deleted:result});
+}));
+// Deleting a registration removes its dependent payment, submission and team records atomically.
+r.delete('/admin/registrations/:id',...admin,handler(async(req,res)=>{
+ const result=await tx(async c=>{
+  const reg=(await c.query('SELECT id,registration_code,user_id,event_id FROM club.registrations WHERE id=$1 FOR UPDATE',[req.params.id])).rows[0];if(!reg)fail(404,'Registration not found');
+  await c.query('DELETE FROM club.team_members WHERE registration_id=$1',[reg.id]);
+  await c.query('DELETE FROM club.payment_refunds WHERE payment_id IN (SELECT id FROM club.payments WHERE registration_id=$1)',[reg.id]);
+  await c.query('DELETE FROM club.payments WHERE registration_id=$1',[reg.id]);
+  await c.query('DELETE FROM club.manual_payment_submissions WHERE registration_id=$1',[reg.id]);
+  const row=(await c.query('DELETE FROM club.registrations WHERE id=$1 RETURNING id,event_id,user_id,registration_code,status',[reg.id])).rows[0];
+  await audit(c,req.user.id,'ADMIN_DELETED_REGISTRATION',reg.id,{registration_code:reg.registration_code,user_id:reg.user_id,event_id:reg.event_id});
+  return row;
+ });
+ res.json({ok:true,deleted:result});
+}));
 export default r;

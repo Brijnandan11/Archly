@@ -42,4 +42,19 @@ r.post('/admin/payments/upi/:id/request-resubmission',...admin,validate(z.object
 r.post('/admin/payments/upi/:id/review',...admin,handler(async(req,res)=>{const updated=await query("UPDATE club.manual_payment_submissions SET status='UNDER_REVIEW',reviewed_by=$1,updated_at=now() WHERE id=$2 AND status='PENDING' RETURNING id,status",[req.user.id,req.params.id]);if(!updated.rowCount)fail(409,'Payment is no longer pending');res.json(updated.rows[0])}));
 r.patch('/admin/payments/upi/config',...admin,validate(z.object({instructions:z.string().trim().min(5).max(2000)}).strict()),handler(async(req,res)=>{const saved=await tx(async c=>{const result=await c.query(`UPDATE club.club_settings SET settings=jsonb_set(settings,'{upi_payment}',COALESCE(settings->'upi_payment','{}'::jsonb)||$1::jsonb,true),updated_by=$2,updated_at=now() WHERE singleton=true RETURNING settings->'upi_payment' config`,[JSON.stringify(req.body),req.user.id]);await audit(c,req.user.id,'ADMIN_UPDATED_UPI_PAYMENT_CONFIG',null,{fields:Object.keys(req.body)});return result.rows[0].config});res.json(saved)}));
 r.post('/admin/payments/upi/qr',...admin,(req,res,next)=>upload(req,res,e=>e?next(e):next()),handler(async(req,res)=>{if(!req.file)fail(400,'QR image required');let meta;try{meta=await sharp(req.file.buffer,{limitInputPixels:25_000_000}).metadata()}catch{fail(400,'Invalid QR image')};if(!['png','jpeg','webp'].includes(meta.format))fail(400,'Use PNG, JPG, or WebP QR image');const path=`organizer/upi-qr/${crypto.randomUUID()}.${meta.format}`,image=await sharp(req.file.buffer).rotate().resize({width:1400,height:1400,fit:'inside',withoutEnlargement:true}).toBuffer();await savePrivate(path,image,meta.format==='jpeg'?'image/jpeg':'image/'+meta.format);try{await tx(async c=>{await c.query(`UPDATE club.club_settings SET settings=jsonb_set(settings,'{upi_payment}',COALESCE(settings->'upi_payment','{}'::jsonb)||$1::jsonb,true),updated_by=$2,updated_at=now() WHERE singleton=true`,[JSON.stringify({qr_path:path}),req.user.id]);await audit(c,req.user.id,'ADMIN_UPDATED_UPI_QR',null,{path})})}catch(e){await deletePrivate(path);throw e}res.status(201).json({ok:true})}));
+// Admin can discard a payment submission entirely; the registration falls back to awaiting payment.
+r.delete('/admin/payments/upi/:id',...admin,handler(async(req,res)=>{
+ let storagePath;
+ const result=await tx(async c=>{
+  const p=(await c.query('SELECT * FROM club.manual_payment_submissions WHERE id=$1 FOR UPDATE',[req.params.id])).rows[0];if(!p)fail(404,'Payment submission not found');
+  storagePath=p.screenshot_storage_path;
+  const reg=(await c.query('SELECT id,status FROM club.registrations WHERE id=$1 FOR UPDATE',[p.registration_id])).rows[0];
+  if(['PENDING_VERIFICATION','PAYMENT_REJECTED'].includes(reg.status)){await c.query("UPDATE club.registrations SET status='PENDING_PAYMENT' WHERE id=$1",[reg.id])}
+  await c.query('DELETE FROM club.manual_payment_submissions WHERE id=$1',[p.id]);
+  await audit(c,req.user.id,'ADMIN_DELETED_UPI_SUBMISSION',p.id,{registration_id:reg.id,utr:p.utr,status:p.status});
+  return {id:p.id,status:'DELETED',registration_id:reg.id,registration_status:'PENDING_PAYMENT'};
+ });
+ if(storagePath)await deletePrivate(storagePath);
+ res.json({ok:true,deleted:result});
+}));
 export default r;
