@@ -19,7 +19,7 @@ test('Ranjana has her supplied photograph and a concise profile matching the oth
  await expect.poll(()=>page.getByAltText(ranjana.name,{exact:true}).evaluate(image=>image.complete&&image.naturalWidth>0)).toBe(true);
  await page.getByText('Profile details',{exact:false}).click();
  const details=page.locator('.faculty-profile-body');
- for(const text of ['M.Tech','M.Sc.','B.Tech','C programming','student mentoring'])await expect(details).toContainText(text);
+ for(const text of ['M.Tech','M.Sc.','Information Technology','C programming','student mentoring'])await expect(details).toContainText(text);
  expect((await details.innerText()).length).toBeLessThan(600);
  await expect(details.getByRole('link',{name:'Email'})).toHaveAttribute('href','mailto:ranjanarao25@gmail.com');
  await expect(page.getByText('Mrs Ranjna',{exact:true})).toHaveCount(0);
