@@ -43,6 +43,10 @@ test('UPI registration, private proof, admin bank verification, and retry-safe c
   await t.test('OCR candidates remain claims and screenshot validation checks decoded image bytes',async()=>{
    const bytes=await image('#123456');const form=new FormData();form.append('screenshot',new Blob([bytes],{type:'image/png'}),'receipt.png');
    const ocr=await request('POST','/api/payments/extract-utr',form,participant.token);assert.equal(ocr.candidates[0].reference,'TEST123456789');assert.equal(ocr.fields.success_text_detected,true);assert.equal('verified' in ocr,false);
+   const missing=new FormData();missing.append('registration_id',reg1.id);missing.append('utr','TEST123456789');
+   await request('POST','/api/payments/submit',missing,participant.token,400);
+   const unchanged=await request('GET',`/api/registrations/${reg1.id}/payment-status`,undefined,participant.token);
+   assert.equal(unchanged.registration.status,'PENDING_PAYMENT');assert.equal(unchanged.submissions.length,0);
    const invalid=new FormData();invalid.append('registration_id',reg1.id);invalid.append('utr','TEST123456789');invalid.append('screenshot',new Blob(['not an image'],{type:'image/png'}),'fake.png');await request('POST','/api/payments/submit',invalid,participant.token,400);
   });
   const firstBytes=await image('#123456'),proof1=await submitProof(reg1,participant,participant.token,firstBytes,'TEST123456789');

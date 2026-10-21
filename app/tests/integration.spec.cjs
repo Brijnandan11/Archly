@@ -78,7 +78,7 @@ test('paid registration opens Coding Club UPI payment and keeps proof pending',a
  const s=await fixture(page,{logged:true,fee:900});await go(page,'register/'+event.id);await page.getByRole('checkbox').check();await page.getByRole('button',{name:/Register and pay/}).click();await expect(page.getByRole('heading',{name:'Registration payment'})).toBeVisible();await expect(page.locator('.upi-amount')).toContainText('₹9');expect(call(s,'/payments/order')).toBeFalsy();expect(s.unexpected).toEqual([]);
 });
 test('reopening an unpaid registration resumes QR payment instead of saying already registered',async({page})=>{
- const s=await fixture(page,{logged:true,fee:900,pending:true});await go(page,'register/'+event.id);await page.getByRole('checkbox').check();await page.getByRole('button',{name:/Register and pay/}).click();await expect(page.getByRole('heading',{name:'Registration payment'})).toBeVisible();await expect(page.getByText('Complete your UPI payment and upload the screenshot.')).toBeVisible();expect(call(s,'/events/'+event.id+'/register')).toBeTruthy();expect(s.unexpected).toEqual([]);
+ const s=await fixture(page,{logged:true,fee:900,pending:true});await go(page,'register/'+event.id);await page.getByRole('checkbox').check();await page.getByRole('button',{name:/Register and pay/}).click();await expect(page.getByRole('heading',{name:'Registration payment'})).toBeVisible();await expect(page.getByText('Registration incomplete: upload your payment screenshot and enter the UTR to submit.',{exact:false})).toBeVisible();expect(call(s,'/events/'+event.id+'/register')).toBeTruthy();expect(s.unexpected).toEqual([]);
 });
 test('payment proof submits with a corrected UTR and no optional payment date',async({page})=>{
  const s=await fixture(page,{logged:true,fee:900,pending:true});await go(page,'payment/'+registration.id);
@@ -357,4 +357,26 @@ test.describe('late animated layout restoration',()=>{
   await response;
   await expect.poll(()=>page.locator('#section-faculty').evaluate(el=>Math.abs(el.getBoundingClientRect().top))).toBeLessThan(5);
  });
+});
+
+test('screenshot is mandatory and manual UTR entry works during slow extraction',async({page})=>{
+ const s=await fixture(page,{logged:true,fee:900,pending:true});
+ let release;const waiting=new Promise(resolve=>{release=resolve});
+ await page.route('**/api/payments/extract-utr',async route=>{await waiting;await route.fulfill({json:{confidence:.99,candidates:[{reference:'AUTOMATIC123456'}],fields:{}}})});
+ await go(page,'payment/'+registration.id);
+ const input=page.getByPlaceholder('Enter the reference shown in your UPI app'),submit=page.getByRole('button',{name:'Submit for verification'});
+ await input.fill('MANUAL123456');await expect(submit).toBeDisabled();expect(call(s,'/payments/submit')).toBeFalsy();
+ await page.locator('input[type=file]').setInputFiles({name:'proof.png',mimeType:'image/png',buffer:Buffer.from('test image')});
+ await expect(page.getByText('Reading the transaction reference…',{exact:false})).toBeVisible();
+ await input.fill('MANUAL123456');await expect(submit).toBeEnabled();
+ release();await expect(page.getByText('Reading the transaction reference…',{exact:false})).toHaveCount(0);
+ await expect(input).toHaveValue('MANUAL123456');await submit.click();
+ await expect(page.getByText('Your payment details have been submitted successfully.',{exact:false})).toBeVisible();
+ expect(call(s,'/payments/submit').body).toContain('MANUAL123456');
+});
+test('pending server status resumes payment even when displayed fee is stale',async({page})=>{
+ await fixture(page,{logged:true,fee:0,pending:true});await go(page,'register/'+event.id);
+ await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Confirm registration'}).click();
+ await expect(page.getByRole('heading',{name:'Registration payment'})).toBeVisible();
+ await expect(page.getByText('Registration confirmed.',{exact:true})).toHaveCount(0);
 });
