@@ -30,3 +30,12 @@ test('renders a Coding Club confirmation email only from explicit registration p
  assert.match(body,/CC-2026-000001/);
  assert.match(body,/₹9\.00/);
 });
+
+test('extracts common bank and payment app reference labels across lines',()=>{
+ for(const label of ['UTR No.','UTR Number','UPI transaction ID','UPI Ref No.','Bank Reference Number','Transaction ID','RRN']){
+  const result=extractPaymentDetails(`${label}\n: 612345678901`);
+  assert.equal(result.candidates[0]?.reference,'612345678901',label);
+ }
+ assert.equal(extractPaymentDetails('Payment successful\n612345678901').candidates[0]?.reference,'612345678901');
+ assert.equal(extractPaymentDetails('UPI transaction details\nPaid successfully').candidates.length,0);
+});

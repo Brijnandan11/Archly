@@ -380,3 +380,14 @@ test('pending server status resumes payment even when displayed fee is stale',as
  await expect(page.getByRole('heading',{name:'Registration payment'})).toBeVisible();
  await expect(page.getByText('Registration confirmed.',{exact:true})).toHaveCount(0);
 });
+
+test('failed extraction can retry the same screenshot and automatically fills UTR',async({page})=>{
+ const s=await fixture(page,{logged:true,fee:900,pending:true});let attempts=0;
+ await page.route('**/api/payments/extract-utr',route=>route.fulfill({json:++attempts===1?{confidence:0,candidates:[],fields:{},extraction_error:'timeout'}:{confidence:.96,candidates:[{reference:'612345678901'}],fields:{}}}));
+ await go(page,'payment/'+registration.id);
+ await page.locator('input[type=file]').setInputFiles({name:'proof.png',mimeType:'image/png',buffer:Buffer.from('test image')});
+ await expect(page.getByText('Reference extraction could not finish.',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Retry extraction'}).click();
+ await expect(page.getByPlaceholder('Enter the reference shown in your UPI app')).toHaveValue('612345678901');
+ expect(attempts).toBe(2);expect(call(s,'/payments/submit')).toBeFalsy();
+});

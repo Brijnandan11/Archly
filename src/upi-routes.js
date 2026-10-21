@@ -2,8 +2,7 @@ import {Router} from 'express';
 import multer from 'multer';
 import sharp from 'sharp';
 import crypto from 'node:crypto';
-import {tmpdir} from 'node:os';
-import {createWorker} from 'tesseract.js';
+import {recognizePaymentScreenshot} from './payment-ocr.js';
 import {z} from 'zod';
 import {rateLimit} from 'express-rate-limit';
 import {query,tx} from './db.js';
@@ -11,48 +10,21 @@ import {auth,role,handler,fail,validate,audit,pagination} from './utils.js';
 import {enqueueMail} from './notifications.js';
 import {extractPaymentDetails,normalizeReference} from './upi-validation.js';
 const r=Router(),admin=[auth,role('ADMIN')],UUID=z.string().uuid();
-const submitLimit=rateLimit({windowMs:15*60_000,limit:8,standardHeaders:'draft-7',legacyHeaders:false});
+// Authentication runs first; proxy IPs must not combine all participants' quotas.
+const paymentLimit=limit=>rateLimit({windowMs:15*60_000,limit,keyGenerator:req=>req.user.id,standardHeaders:'draft-7',legacyHeaders:false,message:{error:'Too many payment requests. Please retry in a few minutes.'}});
+const submitLimit=paymentLimit(8),extractLimit=paymentLimit(30);
 const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:5*1024*1024,files:1,fields:4}}).single('screenshot');
-const bucket='private-payment-evidence';let ocrWorker,ocrImplementation;
+const bucket='private-payment-evidence';let ocrImplementation;
 export function setOCRImplementationForTests(implementation){ocrImplementation=implementation}
 const storage=()=>{const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SECRET_KEY;if(!url||!key)fail(503,'Private screenshot storage is not configured');return {url,key}};
 const normalize=normalizeReference;
-const ocrCache=new Map();
-const emptyOCR=()=>({text:'',confidence:0,candidates:[],fields:{amount_rupees:null,transaction_date_text:null,recipient_upi:null,success_text_detected:false}});
-let ocrQueue=Promise.resolve(),ocrPending=0;
-async function ocr(buffer){
- const key=crypto.createHash('sha256').update(buffer).digest('hex'),cached=ocrCache.get(key);
- if(cached&&cached.expires>Date.now())return cached.result;
- if(ocrPending>=2)return emptyOCR();
- ocrPending++;
- const task=ocrQueue.then(async()=>{
-  const hit=ocrCache.get(key);if(hit&&hit.expires>Date.now())return hit.result;
-  let timer;
-  try{
-   const work=(async()=>{
-    if(ocrImplementation)return await ocrImplementation(buffer);
-    ocrWorker??=createWorker('eng',1,{cachePath:tmpdir()}).catch(error=>{ocrWorker=undefined;throw error});
-    const worker=await ocrWorker;
-    const image=await sharp(buffer,{limitInputPixels:12_000_000}).rotate().resize({width:1400,height:2000,fit:'inside',withoutEnlargement:true}).grayscale().normalize().png().toBuffer();
-    const result=await worker.recognize(image);
-    return {...extractPaymentDetails(result.data.text),confidence:Math.max(0,Math.min(1,Number(result.data.confidence||0)/100))};
-   })();
-   const result=await Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('OCR timeout')),8000)})]);
-   if(ocrCache.size>=100)ocrCache.delete(ocrCache.keys().next().value);
-   ocrCache.set(key,{result,expires:Date.now()+10*60_000});return result;
-  }catch{
-   const worker=ocrWorker;ocrWorker=undefined;if(worker)void worker.then(w=>w.terminate()).catch(()=>{});
-   return emptyOCR();
-  }finally{clearTimeout(timer)}
- });
- ocrQueue=task.catch(()=>{}).finally(()=>{ocrPending--});
- let timer;try{return await Promise.race([task,new Promise(resolve=>{timer=setTimeout(()=>resolve(emptyOCR()),9000)})])}finally{clearTimeout(timer)}
-}
+async function ocr(buffer){return ocrImplementation?ocrImplementation(buffer):recognizePaymentScreenshot(buffer)}
+
 async function signed(path,expires=300){const {url,key}=storage();const response=await fetch(`${url}/storage/v1/object/sign/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:expires})});if(!response.ok)fail(502,'Private image access could not be created');const data=await response.json();return url+'/storage/v1'+data.signedURL}
 async function savePrivate(path,buffer,type){const {url,key}=storage();const response=await fetch(`${url}/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':type,'x-upsert':'false'},body:buffer});if(!response.ok)fail(502,'Private image could not be saved')}
 async function deletePrivate(path){const {url,key}=storage();await fetch(`${url}/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`,{method:'DELETE',headers:{apikey:key,Authorization:`Bearer ${key}`}}).catch(()=>{})}
 r.get('/payments/config',handler(async(_req,res)=>{const row=await query('SELECT settings FROM club.club_settings WHERE singleton=true');const cfg=row.rows[0]?.settings?.upi_payment||{};let qr_url='';if(cfg.qr_path)qr_url=await signed(cfg.qr_path,900);else qr_url=process.env.UPI_QR_IMAGE_URL||'/assets/payment/coding-club-upi-qr.png';res.json({enabled:!!process.env.UPI_VPA,upi_id:process.env.UPI_VPA||'',qr_url,instructions:cfg.instructions||'Pay the exact amount shown, then upload your payment screenshot. Your registration is not confirmed until verified by the organizer.',amount_rupees:9,currency:'INR',event_name:process.env.UPI_EVENT_NAME||'Coding Club'})}));
-r.post('/payments/extract-utr',auth,submitLimit,(req,res,next)=>upload(req,res,e=>e?next(e):next()),handler(async(req,res)=>{if(!req.file)fail(400,'Upload a payment screenshot');let meta;try{meta=await sharp(req.file.buffer,{limitInputPixels:12_000_000,failOn:'error'}).metadata();await sharp(req.file.buffer,{limitInputPixels:12_000_000,failOn:'error'}).rotate().toBuffer()}catch{fail(400,'The screenshot is corrupted or unsupported')};if(!['png','jpeg','webp'].includes(meta.format))fail(400,'Only PNG, JPG, and WebP screenshots are supported');const result=await ocr(req.file.buffer);res.json({...result,review_required:result.confidence<0.55||result.candidates.length===0})}));
+r.post('/payments/extract-utr',auth,extractLimit,(req,res,next)=>upload(req,res,e=>e?next(e):next()),handler(async(req,res)=>{if(!req.file)fail(400,'Upload a payment screenshot');let meta;try{meta=await sharp(req.file.buffer,{limitInputPixels:12_000_000,failOn:'error'}).metadata();await sharp(req.file.buffer,{limitInputPixels:12_000_000,failOn:'error'}).rotate().toBuffer()}catch{fail(400,'The screenshot is corrupted or unsupported')};if(!['png','jpeg','webp'].includes(meta.format))fail(400,'Only PNG, JPG, and WebP screenshots are supported');const result=await ocr(req.file.buffer);res.json({...result,review_required:result.confidence<0.55||result.candidates.length===0})}));
 r.post('/payments/submit',auth,submitLimit,(req,res,next)=>upload(req,res,e=>{if(e)return next(e.code==='LIMIT_FILE_SIZE'?Object.assign(Error('Screenshot exceeds 5 MB.'),{status:413}):e);next()}),handler(async(req,res)=>{
  const parsed=z.object({registration_id:UUID,utr:z.string().trim().min(6).max(64),claimed_amount:z.coerce.number().positive().max(100000).optional(),claimed_paid_at:z.string().datetime({offset:true}).optional()}).safeParse(req.body);if(!parsed.success)fail(400,'Registration, transaction reference, and valid payment proof are required');if(!req.file)fail(400,'Upload a payment screenshot');
  const f=req.file,b=f.buffer;let meta;try{meta=await sharp(b,{limitInputPixels:12_000_000,failOn:'error'}).metadata();await sharp(b,{limitInputPixels:12_000_000,failOn:'error'}).rotate().toBuffer()}catch{fail(400,'The screenshot is corrupted or unsupported')};const type=meta.format==='jpeg'?'image/jpeg':meta.format==='png'?'image/png':meta.format==='webp'?'image/webp':'';if(!type)fail(400,'Only PNG, JPG, and WebP screenshots are supported');

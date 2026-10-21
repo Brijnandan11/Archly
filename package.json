@@ -21,6 +21,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
     "argon2": "^0.44.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",

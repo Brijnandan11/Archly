@@ -18,7 +18,7 @@ function UPIPaymentBody({registrationId}:any){
   if(next.size>5*1024*1024){setError('Screenshot must be 5 MB or smaller.');return}
   if(!['image/png','image/jpeg','image/webp'].includes(next.type)){setError('Use a PNG, JPG, or WebP screenshot.');return}
   setFile(next);setExtracting(true);
-  try{const form=new FormData();form.append('screenshot',next);const result=await post('/payments/extract-utr',form);if(version!==selection.current)return;setOcr(result);if(!utrEdited.current&&result.candidates?.[0])setUtr(result.candidates[0].reference)}
+  try{const form=new FormData();form.append('screenshot',next);const result=await post('/payments/extract-utr',form);if(version!==selection.current)return;setOcr(result);if(result.extraction_error)setError(result.extraction_error==='busy'?'Reference extraction is busy. Use Retry extraction or enter the UTR below.':'Reference extraction could not finish. Use Retry extraction or enter the UTR below.');if(!utrEdited.current&&result.candidates?.[0])setUtr(result.candidates[0].reference)}
   catch(e:any){if(version===selection.current)setError('Automatic reference extraction is unavailable. Enter the UTR from your payment app; your screenshot is still selected.')}
   finally{if(version===selection.current)setExtracting(false)}
  }
@@ -29,6 +29,7 @@ function UPIPaymentBody({registrationId}:any){
  {data?.submissions?.[0]?.rejection_reason&&status==='PAYMENT_REJECTED'&&<p>Review note: {data.submissions[0].rejection_reason}</p>}
  {status!=='CONFIRMED'&&status!=='PENDING_VERIFICATION'&&<form className="form-card upi-submit-form" onSubmit={submit}>
   <label className="field"><span>Payment screenshot (PNG, JPG, WebP; up to 5 MB)</span><input type="file" accept="image/png,image/jpeg,image/webp" required disabled={!config?.enabled||busy} onChange={e=>void choose(e.target.files?.[0]||null)}/></label>
+  {file&&!extracting&&!busy&&<Button kind="outline" onClick={()=>void choose(file)}>Retry extraction</Button>}
   {preview&&<img className="upi-preview" src={preview} alt="Preview of payment screenshot"/>}
   {extracting&&<Notice>Reading the transaction reference… You can enter the UTR below and submit now.</Notice>}
   {ocr&&<Notice>{ocr.candidates?.length?`OCR found ${ocr.candidates.length} possible transaction reference(s). Check and correct the field below.`:'OCR could not confidently find a reference. Enter it from your payment app.'} OCR confidence: {Math.round((ocr.confidence||0)*100)}%. {ocr.fields?.amount_rupees?`Detected amount: ₹${ocr.fields.amount_rupees}.`:''} Detected success text is not payment verification.</Notice>}
