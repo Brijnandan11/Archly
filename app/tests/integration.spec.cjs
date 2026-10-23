@@ -46,6 +46,7 @@ async function fixture(page,{admin=false,logged=false,fee=0,pending=false,noLead
   else if(path==='/admin/events/'+event.id&&method==='PATCH'){Object.assign(state.events[0],body);data=state.events[0]}
   else if(path==='/admin/registrations/export')return route.fulfill({status:200,contentType:'text/csv',body:'registration_code\r\nCC99-00001'});
   else if(path==='/admin/registrations')data=state.adminRegistrations;
+  else if(path==='/admin/users')data=state.adminRegistrations;
   else if(path.startsWith('/admin/registrations/')){const reg=state.adminRegistrations.find(r=>r.id===path.split('/').at(-1));Object.assign(reg,body);data=reg}
   else if(path==='/admin/leaders')data=state.leaders;
   else if(path==='/admin/leaders/'+leader.id+'/reset-password')data={...leader,one_time_password:'rotated-leader-secret'};
@@ -390,4 +391,19 @@ test('failed extraction can retry the same screenshot and automatically fills UT
  await page.getByRole('button',{name:'Retry extraction'}).click();
  await expect(page.getByPlaceholder('Enter the reference shown in your UPI app')).toHaveValue('612345678901');
  expect(attempts).toBe(2);expect(call(s,'/payments/submit')).toBeFalsy();
+});
+
+for(const tab of ['Users','Registrations'])test('admin filters '+tab+' by year and branch together and clears filters',async({page})=>{
+ const s=await fixture(page,{admin:true,logged:true});
+ Object.assign(s.adminRegistrations[0],{academic_year:2,branch:' CSE ',department:'Engineering'});
+ Object.assign(s.adminRegistrations[1],{academic_year:3,branch:'cse',department:'Engineering'});
+ Object.assign(s.adminRegistrations[2],{academic_year:2,branch:'',department:'IT'});
+ await go(page,'admin');await page.getByRole('navigation',{name:'Admin workspace'}).getByRole('button',{name:tab,exact:true}).click();
+ const rows=page.locator('tbody tr');await expect(rows).toHaveCount(3);
+ await page.getByLabel('Year',{exact:true}).selectOption('2');await expect(rows).toHaveCount(2);
+ await page.getByLabel('Branch',{exact:true}).selectOption('cse');await expect(rows).toHaveCount(1);await expect(rows).toContainText(user.full_name);
+ await page.getByLabel('Year',{exact:true}).selectOption('3');await expect(rows).toHaveCount(1);await expect(rows).toContainText('Second Student');
+ await page.getByLabel('Branch',{exact:true}).selectOption('it');await expect(rows).toHaveCount(0);await expect(page.getByText('No users match the selected filters.')).toBeVisible();
+ await page.getByRole('button',{name:'Clear filters',exact:true}).click();await expect(rows).toHaveCount(3);await expect(page.locator('.admin-main [role=status]')).toContainText('Showing 3 of 3 records');
+ expect(s.unexpected).toEqual([]);
 });
